@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  passport:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: passport-ai-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./prisma/dev.db
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_ENV=${PAYPAL_ENV:-sandbox}
+      - PAYPAL_MCP_URL=https://mcp.sandbox.paypal.com
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - DEMO_MODE=true
+    volumes:
+      - ./frontend/prisma:/app/prisma
+

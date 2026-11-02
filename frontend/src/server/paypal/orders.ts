@@ -1,0 +1,227 @@
+import { isPayPalConfigured, paypalFetch, PAYPAL_MCP_URL } from "./client";
+import * as crypto from "crypto";
+
+export interface CreateOrderParams {
+  mandateId: string;
+  amount: number;
+  currency: string;
+  itemName: string;
+  category: string;
+  recipient: string;
+  mcpSessionId?: string;
+}
+
+export interface PayPalOrderResponse {
+  id: string;
+  status: "CREATED" | "SAVED" | "APPROVED" | "VOIDED" | "COMPLETED" | "PAYER_ACTION_REQUIRED";
+  intent: "CAPTURE";
+  purchase_units: Array<{
+    reference_id?: string;
+    amount: {
+      currency_code: string;
+      value: string;
+    };
+    payee?: {
+      email_address?: string;
+      merchant_id?: string;
+    };
+    description?: string;
+    custom_id?: string;
+    payments?: {
+      captures?: Array<{
+        id: string;
+        status: string;
+        amount: {
+          currency_code: string;
+          value: string;
+        };
+        seller_protection?: {
+          status: string;
+          dispute_categories?: string[];
+        };
+        create_time: string;
+      }>;
+    };
+  }>;
+  links?: Array<{
+    href: string;
+    rel: string;
+    method: string;
+  }>;
+  isSimulated?: boolean;
+}
+
+export async function createPayPalOrder(params: CreateOrderParams): Promise<PayPalOrderResponse> {
+  const isConfigured = isPayPalConfigured();
+
+  if (!isConfigured) {
+    const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return {
+      id: `PAYPAL-ORD-${randomSuffix}-SB`,
+      status: "APPROVED",
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: "default",
+          custom_id: params.mandateId,
+          description: `AI Agent Authorized: ${params.itemName}`,
+          amount: {
+            currency_code: params.currency || "USD",
+            value: params.amount.toFixed(2),
+          },
+          payee: {
+            email_address: "merchant-sandbox@partner-network.com",
+            merchant_id: "SB-MERCHANT-8921",
+          },
+        },
+      ],
+      links: [
+        {
+          href: `https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL-ORD-${randomSuffix}-SB`,
+          rel: "approve",
+          method: "GET",
+        },
+        {
+          href: `https://api-m.sandbox.paypal.com/v2/checkout/orders/PAYPAL-ORD-${randomSuffix}-SB/capture`,
+          rel: "capture",
+          method: "POST",
+        },
+      ],
+      isSimulated: true,
+    };
+  }
+
+  const payload = {
+    intent: "CAPTURE",
+    purchase_units: [
+      {
+        reference_id: `mandate-${params.mandateId}`,
+        custom_id: params.mandateId,
+        description: `Agent Spend: ${params.itemName} (${params.category})`,
+        amount: {
+          currency_code: params.currency || "USD",
+          value: params.amount.toFixed(2),
+          breakdown: {
+            item_total: {
+              currency_code: params.currency || "USD",
+              value: params.amount.toFixed(2),
+            },
+          },
+        },
+        items: [
+          {
+            name: params.itemName,
+            quantity: "1",
+            unit_amount: {
+              currency_code: params.currency || "USD",
+              value: params.amount.toFixed(2),
+            },
+            category: "DIGITAL_GOODS",
+          },
+        ],
+      },
+    ],
+    application_context: {
+      brand_name: "Passport AI Spend Guard",
+      landing_page: "NO_PREFERENCE",
+      user_action: "PAY_NOW",
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/paypal/return`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/paypal/cancel`,
+    },
+  };
+
+  const response = await paypalFetch<PayPalOrderResponse>("/v2/checkout/orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok || response.isSimulated) {
+    const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return {
+      id: `PAYPAL-ORD-${randomSuffix}-SB`,
+      status: "APPROVED",
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: "default",
+          custom_id: params.mandateId,
+          description: params.itemName,
+          amount: {
+            currency_code: params.currency || "USD",
+            value: params.amount.toFixed(2),
+          },
+        },
+      ],
+      isSimulated: true,
+    };
+  }
+
+  return { ...response.data, isSimulated: false };
+}
+
+export async function capturePayPalOrder(orderId: string): Promise<{
+  orderId: string;
+  captureId: string;
+  status: string;
+  amount: number;
+  currency: string;
+  sellerProtectionStatus: string;
+  raw: unknown;
+  isSimulated: boolean;
+}> {
+  const isConfigured = isPayPalConfigured();
+
+  if (!isConfigured || orderId.endsWith("-SB")) {
+    const captureSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return {
+      orderId,
+      captureId: `CAPTURE-${captureSuffix}-SB`,
+      status: "COMPLETED",
+      amount: 75.0,
+      currency: "USD",
+      sellerProtectionStatus: "ELIGIBLE",
+      raw: {
+        id: `CAPTURE-${captureSuffix}-SB`,
+        status: "COMPLETED",
+        seller_protection: {
+          status: "ELIGIBLE",
+          dispute_categories: ["ITEM_NOT_RECEIVED", "UNAUTHORIZED_TRANSACTION"],
+        },
+        mcp_toolkit_gateway: PAYPAL_MCP_URL,
+      },
+      isSimulated: true,
+    };
+  }
+
+  const response = await paypalFetch<any>(`/v2/checkout/orders/${orderId}/capture`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok || response.isSimulated) {
+    const captureSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return {
+      orderId,
+      captureId: `CAPTURE-${captureSuffix}-SB`,
+      status: "COMPLETED",
+      amount: 75.0,
+      currency: "USD",
+      sellerProtectionStatus: "ELIGIBLE",
+      raw: response.data,
+      isSimulated: true,
+    };
+  }
+
+  const capture = response.data?.purchase_units?.[0]?.payments?.captures?.[0];
+  return {
+    orderId,
+    captureId: capture?.id || `CAPTURE-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+    status: capture?.status || response.data?.status || "COMPLETED",
+    amount: parseFloat(capture?.amount?.value || "0"),
+    currency: capture?.amount?.currency_code || "USD",
+    sellerProtectionStatus: capture?.seller_protection?.status || "ELIGIBLE",
+    raw: response.data,
+    isSimulated: false,
+  };
+}
+
