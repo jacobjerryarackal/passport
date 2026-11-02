@@ -12,10 +12,9 @@ import {
   Layers,
   History,
   RotateCcw,
-  ExternalLink,
+  PlayCircle,
   ChevronRight,
   CheckCircle2,
-  PlayCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
@@ -33,7 +32,6 @@ const navigation = [
 export function AppSidebar() {
   const pathname = usePathname();
   const [resetting, setResetting] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
 
   const handleResetDemo = async () => {
     if (confirm("Reset demo data to initial hackathon scenario?")) {
@@ -41,10 +39,7 @@ export function AppSidebar() {
       try {
         const res = await fetch("/api/demo/reset", { method: "POST" });
         if (res.ok) {
-          setResetSuccess(true);
-          setTimeout(() => {
-            window.location.reload();
-          }, 800);
+          window.location.reload();
         }
       } catch (err) {
         console.error("Failed to reset demo:", err);
@@ -55,70 +50,70 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="w-64 border-r border-border bg-card/60 backdrop-blur-sm flex flex-col justify-between h-screen sticky top-0 shrink-0">
-      <div className="p-4 space-y-6">
+    <aside className="w-60 border-r border-border bg-[#0C0C0F] dark:bg-[#09090B] flex flex-col justify-between h-screen sticky top-0 shrink-0">
+      <div className="p-3.5 space-y-5">
         {/* Brand */}
-        <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center text-white shadow-sm shadow-primary/20">
-              <Shield className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-between pb-3 border-b border-border/80">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-[#0070BA] flex items-center justify-center text-white shadow-sm shadow-[#0070BA]/20">
+              <Shield className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
-              <span className="font-bold tracking-tight text-base text-foreground block">
+              <span className="font-bold tracking-tight text-xs text-foreground block">
                 Passport
               </span>
               <span className="text-[10px] text-muted-foreground block -mt-0.5">
-                PayPal AI Spend Guard
+                Financial Control Plane
               </span>
             </div>
           </Link>
-          <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
             Sandbox
           </span>
         </div>
 
-        {/* Quick Demo Tour Banner */}
+        {/* Guided Tour Banner */}
         <Link
           href="/demo"
-          className="flex items-center justify-between p-2.5 rounded-xl bg-primary-500/10 border border-primary-500/20 hover:bg-primary-500/15 transition-colors group"
+          className="flex items-center justify-between p-2 rounded-md bg-[#0070BA]/10 border border-[#0070BA]/25 hover:bg-[#0070BA]/15 transition-colors group"
         >
           <div className="flex items-center gap-2">
-            <PlayCircle className="w-4 h-4 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-semibold text-primary-700 dark:text-primary-300">
-              Interactive Tour
+            <PlayCircle className="w-3.5 h-3.5 text-[#0070BA] dark:text-[#38BDF8]" />
+            <span className="text-xs font-semibold text-[#0070BA] dark:text-[#38BDF8]">
+              Guided Demo Tour
             </span>
           </div>
-          <ChevronRight className="w-3.5 h-3.5 text-primary-500 group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-3 h-3 text-[#0070BA] dark:text-[#38BDF8] group-hover:translate-x-0.5 transition-transform" />
         </Link>
 
         {/* Navigation */}
-        <nav className="space-y-1">
+        <nav className="space-y-0.5">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                  "flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-primary-600 text-white shadow-sm shadow-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                    ? "bg-[#0070BA] text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-surfaceSubtle"
                 )}
               >
-                <div className="flex items-center gap-2.5">
-                  <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-muted-foreground")} />
+                <div className="flex items-center gap-2">
+                  <Icon className={cn("w-3.5 h-3.5", isActive ? "text-white" : "text-muted-foreground")} />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
                   <span
                     className={cn(
-                      "text-[10px] px-1.5 py-0.2 rounded-full font-semibold",
+                      "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold",
                       isActive
                         ? "bg-white/20 text-white"
-                        : "bg-destructive/15 text-destructive border border-destructive/20"
+                        : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
                     )}
                   >
                     {item.badge}
@@ -130,31 +125,30 @@ export function AppSidebar() {
         </nav>
       </div>
 
-      {/* Footer System Status & Controls */}
-      <div className="p-4 border-t border-border space-y-3">
-        <div className="rounded-lg bg-muted/40 p-2.5 border border-border/50 text-[11px] space-y-1">
+      {/* Footer Controls */}
+      <div className="p-3.5 border-t border-border/80 space-y-2.5">
+        <div className="rounded p-2 bg-surfaceSubtle border border-border/80 text-[10px] space-y-1 font-mono">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>PayPal Gateway</span>
-            <span className="text-emerald-500 font-medium flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Ready
+            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-2.5 h-2.5" /> LIVE
             </span>
           </div>
-          <div className="flex items-center justify-between text-muted-foreground font-mono text-[10px]">
-            <span>MCP Toolkit</span>
-            <span className="truncate max-w-[90px] text-primary-500">mcp.paypal...</span>
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>Agent Toolkit</span>
+            <span className="text-primary-400 truncate max-w-[85px]">mcp.sandbox</span>
           </div>
         </div>
 
         <button
           onClick={handleResetDemo}
           disabled={resetting}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded border border-border/80 bg-surfaceSubtle hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
-          <RotateCcw className={cn("w-3.5 h-3.5", resetting && "animate-spin")} />
-          {resetSuccess ? "Resetting State..." : "Reset Hackathon Demo"}
+          <RotateCcw className={cn("w-3 h-3", resetting && "animate-spin")} />
+          <span>{resetting ? "Resetting..." : "Reset Scenario Data"}</span>
         </button>
       </div>
     </aside>
   );
 }
-

@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
+import { TrustPassportCredential } from "@/components/passports/trust-passport-credential";
+import { FintechButton } from "@/components/ui/fintech-button";
+import { StatusPill } from "@/components/ui/status-pill";
 import {
   Shield,
   ShieldCheck,
@@ -24,41 +27,119 @@ import {
   FileCheck2,
   UserCheck,
   ExternalLink,
+  Cpu,
 } from "lucide-react";
-import { formatCurrency, truncateHash } from "@/lib/utils";
+
+const DEMO_HERO_PASSPORT = {
+  id: "pass-giftcard-75",
+  passportNumber: "PASS-2026-8942-US",
+  status: "ISSUED",
+  disputeReadinessScore: 98,
+  passportHash: "92fe1516cccce243f341d4a8c20fb2d7e012354a8b7923485cba799ef0439201",
+  issuedAt: "2026-11-02T18:30:00Z",
+  authorizationData: JSON.stringify({
+    mandateId: "mandate-gift-card-demo",
+    title: "Client Appreciation Gift",
+    purpose: "Client appreciation gift for Q4 milestone delivery",
+    maxAmount: 80.0,
+    currency: "USD",
+    allowedCategories: "digital gift cards",
+    authorizer: "Human Business Owner (Jacob)",
+    approvedAt: "2026-11-02T18:28:00Z",
+    constraints: [
+      "Per-transaction cap: $80.00 USD",
+      "Category restriction: digital gift cards only",
+      "Time-to-live: 24 hours strictly enforced",
+      "Refund policy: Full dispute defense enabled",
+    ],
+  }),
+  transactionData: JSON.stringify({
+    paypalOrderId: "PAYPAL-ORD-8X92104M-SB",
+    paypalCaptureId: "CAPTURE-7TY90123L-SB",
+    sellerProtection: "ELIGIBLE",
+    payerEmail: "sb-buyer-8491@business.example.com",
+    payeeEmail: "merchant-sandbox@passport.ai",
+    captureTime: "2026-11-02T18:29:45Z",
+    grossAmount: "$75.00 USD",
+    paypalFee: "$2.48 USD",
+    netAmount: "$72.52 USD",
+  }),
+  agentTrailData: JSON.stringify({
+    agentModel: "Google Gemini 1.5 Pro (Autonomous Purchase Engine)",
+    reasoning:
+      "Evaluated options against Mandate purpose ('Client appreciation gift'). Selected $75 digital gift card leaving $5.00 buffer under $80 cap. Item strictly belongs to authorized category 'digital gift cards'.",
+    selectedItem: "Starbucks Digital e-Gift Card ($75)",
+    itemPrice: 75.0,
+    budgetRemaining: 5.0,
+    executionTraceId: "gemini-exec-490218-trace",
+  }),
+  refundEligibility: JSON.stringify({
+    eligible: true,
+    reason: "Standard 30-day merchant warranty & PayPal Seller Protection applied",
+  }),
+  evidencePack: JSON.stringify([
+    "Human Mandate Cryptographic Token (SHA-256)",
+    "Autonomous Agent Intent Transcript (Gemini 1.5 Pro)",
+    "PayPal Sandbox Orders v2 Capture Attestation",
+    "Merchant Electronic Delivery Proof & Voucher Code",
+    "Digital Delivery Certificate (ECDSA-P256)",
+  ]),
+  mandate: {
+    id: "mandate-gift-card-demo",
+    title: "Client Appreciation Gift",
+    purpose: "Client appreciation gift",
+    maxAmount: 80.0,
+    currency: "USD",
+    allowedCategories: "digital gift cards",
+  },
+  purchase: {
+    id: "purch-75-starbucks",
+    amount: 75.0,
+    currency: "USD",
+    itemName: "Starbucks e-Gift Card",
+    recipient: "client@acmecorp.com",
+    paypalOrderId: "PAYPAL-ORD-8X92104M-SB",
+    paypalCaptureId: "CAPTURE-7TY90123L-SB",
+    status: "SETTLED",
+    disputes: [],
+  },
+};
+
+const DEMO_HERO_VERIFICATION = {
+  isSignatureValid: true,
+  hash: "92fe1516cccce243f341d4a8c20fb2d7e012354a8b7923485cba799ef0439201",
+  algorithm: "ECDSA-P256-SHA256",
+  verifiedAt: "2026-11-02T18:30:00Z",
+};
 
 export default function LandingPage() {
-  const [activePassportTab, setActivePassportTab] = useState<
-    "auth" | "tx" | "agent" | "receipt" | "defense"
-  >("auth");
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-32 fintech-grid border-b border-border/60">
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary-600/10 dark:bg-primary-500/15 rounded-full blur-[120px] pointer-events-none" />
+      <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28 fintech-grid border-b border-border">
+        {/* Subtle hairline gradient top bar */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary-500/30 to-transparent pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            {/* PayPal Sandbox Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border/80 shadow-sm text-xs font-medium text-foreground">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-primary-600 dark:text-primary-400">
+            {/* Control Plane Telemetry Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-xs text-xs font-medium text-foreground">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-semibold text-primary-500">
                 PayPal AI Hackathon 2026
               </span>
               <span className="text-muted-foreground">·</span>
               <span className="text-muted-foreground font-mono text-[11px]">
-                PayPal Orders + Webhooks + Disputes API
+                PayPal Orders v2 · Webhooks · Disputes API
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
               AI agents can spend money.{" "}
-              <span className="text-primary-600 dark:text-primary-400 block sm:inline">
+              <span className="block text-zinc-100 dark:text-zinc-100 sm:inline">
                 Passport makes every purchase accountable.
               </span>
             </h1>
@@ -68,132 +149,67 @@ export default function LandingPage() {
               Authorize AI-agent purchases, generate verifiable receipts, and turn disputes into evidence-ready cases.
             </p>
 
-            {/* CTAs */}
+            {/* Restrained CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Link
-                href="/demo"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm shadow-md shadow-primary/25 transition-all hover:scale-[1.02]"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                Launch Live Demo
+              <Link href="/demo">
+                <FintechButton variant="primary" size="lg" className="w-full sm:w-auto">
+                  <Play className="w-4 h-4 fill-current" />
+                  Launch Live Demo
+                </FintechButton>
               </Link>
 
-              <Link
-                href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-semibold text-sm shadow-sm transition-all hover:scale-[1.02]"
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
               >
-                Enter App Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+                <FintechButton variant="outline" size="lg" className="w-full sm:w-auto">
+                  <Github className="w-4 h-4" />
+                  View GitHub
+                </FintechButton>
+              </a>
             </div>
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap items-center justify-center gap-6 pt-6 text-xs text-muted-foreground font-medium">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Mandate-checked</span>
+              <div className="flex items-center gap-2">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="text-foreground font-medium">Mandate-checked</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-primary-500" />
-                <span>Audit-ready (SHA-256)</span>
+              <div className="flex items-center gap-2">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-primary-400" />
+                <span className="text-foreground font-medium">Audit-ready (SHA-256)</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4 text-amber-500" />
-                <span>Human-approved co-signature</span>
+              <div className="flex items-center gap-2">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-amber-400" />
+                <span className="text-foreground font-medium">Human-approved co-signature</span>
               </div>
             </div>
           </div>
 
-          {/* Hero Trust Passport Card Preview */}
-          <div className="mt-14 max-w-4xl mx-auto">
-            <div className="rounded-2xl border-2 border-primary/30 bg-card/90 backdrop-blur-xl shadow-2xl overflow-hidden transition-all hover:border-primary/50">
-              <div className="bg-gradient-to-r from-primary-950 via-primary-900 to-primary-800 p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono tracking-widest px-2 py-0.5 rounded bg-white/10 uppercase font-bold text-white/90">
-                      Verifiable Trust Passport
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> SIGNATURE ATTESTED
-                    </span>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-mono font-bold tracking-tight text-white">
-                    PASS-2026-8942-US
-                  </h3>
-                  <p className="text-xs text-white/70">
-                    Governing Mandate: &quot;Client appreciation gift&quot; ($80.00 Limit)
-                  </p>
-                </div>
-
-                <div className="text-right bg-black/30 p-3 rounded-xl border border-white/10">
-                  <span className="text-[10px] uppercase font-semibold text-white/70 block">
-                    Dispute Readiness
-                  </span>
-                  <span className="text-2xl font-mono font-bold text-emerald-400">
-                    98/100
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs border-b border-border bg-card">
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                    Executed Amount
-                  </span>
-                  <span className="text-base font-bold font-mono text-foreground">
-                    $75.00 USD
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                    PayPal Sandbox Order
-                  </span>
-                  <span className="font-mono text-primary-600 dark:text-primary-400 font-bold">
-                    PAYPAL-ORD-8X92104M
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                    Item Purchased
-                  </span>
-                  <span className="font-semibold text-foreground truncate block">
-                    Starbucks e-Gift Card
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                    Seller Protection
-                  </span>
-                  <span className="text-emerald-500 font-bold font-mono">
-                    ELIGIBLE
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-4 bg-muted/30 px-6 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-mono text-[11px] truncate max-w-sm">
-                  SHA-256: 92fe1516cccce243f341d4a8c20fb2d7...
-                </span>
-                <Link
-                  href="/passports/pass-giftcard-75"
-                  className="font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-                >
-                  Interactive Inspection &rarr;
-                </Link>
-              </div>
+          {/* Hero Centerpiece: Live Trust Passport Credential */}
+          <div className="mt-12 max-w-4xl mx-auto">
+            <div className="text-center mb-3">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Live Interactive Financial Credential
+              </span>
             </div>
+            <TrustPassportCredential
+              passport={DEMO_HERO_PASSPORT}
+              verification={DEMO_HERO_VERIFICATION}
+            />
           </div>
         </div>
       </section>
 
       {/* SECTION 1: THE PROBLEM */}
-      <section id="problem" className="py-20 md:py-28 bg-card border-b border-border">
+      <section id="problem" className="py-20 md:py-24 bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs uppercase font-mono font-bold tracking-wider text-destructive">
+            <span className="text-xs uppercase font-mono font-bold tracking-wider text-rose-400">
               The Agent Spend Dilemma
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               &quot;Your AI agent just spent $75. Can you prove what it was authorized to do?&quot;
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -203,11 +219,11 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Problem Card 1 */}
-            <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
+            <div className="p-6 rounded-xl border border-rose-500/25 bg-rose-500/5 space-y-3">
+              <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
                 <XCircle className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-foreground">
+              <h3 className="text-sm font-bold text-foreground">
                 No Spending Mandate
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -216,11 +232,11 @@ export default function LandingPage() {
             </div>
 
             {/* Problem Card 2 */}
-            <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
+            <div className="p-6 rounded-xl border border-rose-500/25 bg-rose-500/5 space-y-3">
+              <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
                 <AlertOctagon className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-foreground">
+              <h3 className="text-sm font-bold text-foreground">
                 No Verifiable Receipt
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -229,11 +245,11 @@ export default function LandingPage() {
             </div>
 
             {/* Problem Card 3 */}
-            <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
-                <Shield className="w-5 h-5 text-destructive" />
+            <div className="p-6 rounded-xl border border-rose-500/25 bg-rose-500/5 space-y-3">
+              <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-rose-400" />
               </div>
-              <h3 className="text-base font-bold text-foreground">
+              <h3 className="text-sm font-bold text-foreground">
                 No Dispute Evidence
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -245,24 +261,24 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION 2: HOW IT WORKS */}
-      <section id="how-it-works" className="py-20 md:py-28 bg-background border-b border-border">
+      <section id="how-it-works" className="py-20 md:py-24 bg-background border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase font-mono font-bold tracking-wider text-primary-600 dark:text-primary-400">
+            <span className="text-xs uppercase font-mono font-bold tracking-wider text-primary-500">
               The Passport Architecture
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               How Passport Protects Autonomous Purchases
             </h2>
             <p className="text-sm text-muted-foreground">
-              A four-step cryptographic defense chain running on PayPal Sandbox and Gemini.
+              A four-step cryptographic defense chain running on PayPal Sandbox and Google Gemini.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Step 1 */}
             <div className="fintech-card p-6 space-y-3 relative">
-              <span className="text-3xl font-mono font-extrabold text-primary-600/30 dark:text-primary-400/20">
+              <span className="text-2xl font-mono font-bold text-muted-foreground/30 tabular-nums">
                 01
               </span>
               <div className="flex items-center gap-2">
@@ -276,11 +292,11 @@ export default function LandingPage() {
 
             {/* Step 2 */}
             <div className="fintech-card p-6 space-y-3 relative">
-              <span className="text-3xl font-mono font-extrabold text-primary-600/30 dark:text-primary-400/20">
+              <span className="text-2xl font-mono font-bold text-muted-foreground/30 tabular-nums">
                 02
               </span>
               <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-emerald-500" />
+                <Bot className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-bold text-foreground">Agent Proposes Purchase</h3>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -290,7 +306,7 @@ export default function LandingPage() {
 
             {/* Step 3 */}
             <div className="fintech-card p-6 space-y-3 relative">
-              <span className="text-3xl font-mono font-extrabold text-primary-600/30 dark:text-primary-400/20">
+              <span className="text-2xl font-mono font-bold text-muted-foreground/30 tabular-nums">
                 03
               </span>
               <div className="flex items-center gap-2">
@@ -304,11 +320,11 @@ export default function LandingPage() {
 
             {/* Step 4 */}
             <div className="fintech-card p-6 space-y-3 relative">
-              <span className="text-3xl font-mono font-extrabold text-primary-600/30 dark:text-primary-400/20">
+              <span className="text-2xl font-mono font-bold text-muted-foreground/30 tabular-nums">
                 04
               </span>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold text-foreground">Passport &amp; Defense Ready</h3>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -319,111 +335,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SECTION 3: TRUST PASSPORT SHOWCASE */}
-      <section id="trust-passport" className="py-20 md:py-28 bg-card border-b border-border">
+      {/* SECTION 3: CHARGEBACK AUTOPSY PREVIEW */}
+      <section id="chargeback-autopsy" className="py-20 md:py-24 bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase font-mono font-bold tracking-wider text-emerald-500">
-              Verifiable Cryptographic Proof
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-              The Trust Passport Credential
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Explore the five essential cryptographic facets embedded in every Passport.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto rounded-2xl border border-border bg-background shadow-xl overflow-hidden">
-            {/* Tabs */}
-            <div className="flex flex-wrap border-b border-border bg-muted/40 px-4 text-xs font-semibold">
-              {[
-                { id: "auth", label: "Authorization" },
-                { id: "tx", label: "Transaction" },
-                { id: "agent", label: "Agent Trail" },
-                { id: "receipt", label: "Receipt" },
-                { id: "defense", label: "Dispute Readiness" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActivePassportTab(tab.id as any)}
-                  className={`py-3 px-4 border-b-2 transition-colors ${
-                    activePassportTab === tab.id
-                      ? "border-primary text-primary font-bold bg-card"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Body */}
-            <div className="p-6 text-xs space-y-4">
-              {activePassportTab === "auth" && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-foreground text-sm">Human Mandate Snapshot</h4>
-                  <div className="grid grid-cols-2 gap-3 text-muted-foreground">
-                    <div>Purpose: <strong className="text-foreground">Client appreciation gift</strong></div>
-                    <div>Cap: <strong className="text-emerald-500 font-mono">$80.00 USD</strong></div>
-                    <div>Category: <strong className="text-foreground font-mono">digital gift cards</strong></div>
-                    <div>Authorizer: <strong className="text-foreground">Human Business Owner</strong></div>
-                  </div>
-                </div>
-              )}
-
-              {activePassportTab === "tx" && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-foreground text-sm">PayPal Sandbox Settlement</h4>
-                  <div className="grid grid-cols-2 gap-3 text-muted-foreground">
-                    <div>Order ID: <strong className="text-foreground font-mono">PAYPAL-ORD-8X92104M-SB</strong></div>
-                    <div>Capture ID: <strong className="text-foreground font-mono">CAPTURE-7TY90123L-SB</strong></div>
-                    <div>Amount: <strong className="text-foreground font-mono">$75.00 USD</strong></div>
-                    <div>Protection: <strong className="text-emerald-500 font-mono">ELIGIBLE</strong></div>
-                  </div>
-                </div>
-              )}
-
-              {activePassportTab === "agent" && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-foreground text-sm">Gemini Inference Transcript</h4>
-                  <p className="italic text-muted-foreground bg-muted/40 p-3 rounded-lg">
-                    &quot;Selected $75 digital gift card matching mandate purpose (&apos;Client appreciation gift&apos;), within $80 cap ($5 buffer), and within digital gift card category.&quot;
-                  </p>
-                </div>
-              )}
-
-              {activePassportTab === "receipt" && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-foreground text-sm">Verifiable Line Items</h4>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30 font-mono">
-                    <span>Starbucks Digital e-Gift Card ($75) &times; 1</span>
-                    <span className="font-bold text-foreground">$75.00</span>
-                  </div>
-                </div>
-              )}
-
-              {activePassportTab === "defense" && (
-                <div className="space-y-3">
-                  <h4 className="font-bold text-foreground text-sm">Pre-Assembled Defense Bundle</h4>
-                  <div className="flex items-center gap-2 text-emerald-500 font-medium">
-                    <CheckCircle2 className="w-4 h-4" /> 5 of 5 cryptographic proofs attached and verified (Readiness Score: 98/100)
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4: CHARGEBACK AUTOPSY */}
-      <section id="chargeback-autopsy" className="py-20 md:py-28 bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase font-mono font-bold tracking-wider text-amber-500">
+            <span className="text-xs uppercase font-mono font-bold tracking-wider text-amber-400">
               Forensic Dispute Defense
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               Autonomous Chargeback Autopsy
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -431,35 +350,35 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Forensic Pipeline */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Forensic Pipeline Card */}
             <div className="fintech-card border-amber-500/30 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
+                <span className="font-mono text-xs font-bold text-amber-400">
                   PP-D-849201 Autopsy
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 font-bold">
-                  CHARGEBACK
-                </span>
+                <StatusPill status="action_required" label="CHARGEBACK" />
               </div>
 
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>Evidence Reconciliation:</span>
-                  <span className="font-mono text-emerald-500 font-bold">5/5 Verified</span>
+                  <span className="font-mono text-emerald-400 font-bold tabular-nums">
+                    5/5 Verified
+                  </span>
                 </div>
-                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                   <div className="bg-emerald-500 h-full w-full rounded-full" />
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300">
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">
                 <strong>Gemini Strategy:</strong> COMPELLING_EVIDENCE_DIGITAL_DELIVERY with Seller Protection intangible goods coverage.
               </div>
 
-              <div className="pt-2 text-xs text-muted-foreground flex items-center justify-between">
-                <span>Response Due: <strong>6 Days Remaining</strong></span>
-                <span className="text-foreground font-semibold">Risk: Low</span>
+              <div className="pt-2 text-xs text-muted-foreground flex items-center justify-between border-t border-border">
+                <span>Response Due: <strong className="text-foreground">6 Days Remaining</strong></span>
+                <span className="text-foreground font-semibold">Risk: Low (98/100)</span>
               </div>
             </div>
 
@@ -467,7 +386,7 @@ export default function LandingPage() {
             <div className="fintech-card border-emerald-500/30 space-y-4 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <h3 className="text-sm font-bold text-foreground">
@@ -479,9 +398,9 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-border bg-card text-xs font-mono space-y-1">
+              <div className="p-3.5 rounded-lg border border-border bg-background text-xs font-mono space-y-1">
                 <div className="text-[10px] text-muted-foreground uppercase">Attestation Signature</div>
-                <div className="text-emerald-500 font-bold truncate">
+                <div className="text-emerald-400 font-bold truncate">
                   CO-SIGNED BY: Jacob (Owner &amp; Compliance Lead)
                 </div>
               </div>
@@ -490,14 +409,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SECTION 5: SECURITY MODEL */}
-      <section id="security" className="py-20 md:py-28 bg-card border-b border-border">
+      {/* SECTION 4: INSTITUTIONAL SECURITY MODEL */}
+      <section id="security" className="py-20 md:py-24 bg-background border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <span className="text-xs uppercase font-mono font-bold tracking-wider text-primary-500">
               Institutional Grade
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               Fintech Security Model
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -506,7 +425,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs">
-            <div className="p-5 rounded-xl border border-border bg-background space-y-2">
+            <div className="p-5 rounded-xl border border-border bg-card space-y-2">
               <Lock className="w-5 h-5 text-primary-500" />
               <h4 className="font-bold text-foreground text-sm">Mandate Bounds</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -514,23 +433,23 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-xl border border-border bg-background space-y-2">
-              <Layers className="w-5 h-5 text-emerald-500" />
+            <div className="p-5 rounded-xl border border-border bg-card space-y-2">
+              <Layers className="w-5 h-5 text-emerald-400" />
               <h4 className="font-bold text-foreground text-sm">Merkle Audit Trail</h4>
               <p className="text-muted-foreground leading-relaxed">
                 Every agent proposal, decision, and transaction is hashed and chained into an immutable audit ledger.
               </p>
             </div>
 
-            <div className="p-5 rounded-xl border border-border bg-background space-y-2">
-              <UserCheck className="w-5 h-5 text-amber-500" />
+            <div className="p-5 rounded-xl border border-border bg-card space-y-2">
+              <UserCheck className="w-5 h-5 text-amber-400" />
               <h4 className="font-bold text-foreground text-sm">Human Approval</h4>
               <p className="text-muted-foreground leading-relaxed">
                 Mandatory human co-signature enforced for refunds, dispute filings, and money-moving exceptions.
               </p>
             </div>
 
-            <div className="p-5 rounded-xl border border-border bg-background space-y-2">
+            <div className="p-5 rounded-xl border border-border bg-card space-y-2">
               <ShieldCheck className="w-5 h-5 text-primary-500" />
               <h4 className="font-bold text-foreground text-sm">Webhook Verification</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -541,69 +460,67 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SECTION 6: TECH STACK */}
-      <section className="py-16 bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+      {/* SECTION 5: TECH STACK */}
+      <section className="py-14 bg-card border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <span className="text-xs uppercase font-mono font-bold tracking-wider text-muted-foreground">
-            Built for the PayPal AI Hackathon
+            Built for the PayPal AI Hackathon 2026
           </span>
 
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-semibold text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-8 text-xs sm:text-sm font-semibold text-muted-foreground">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-              <span>PayPal Orders, Webhooks &amp; Disputes API</span>
+              <CreditCard className="w-4 h-4 text-primary-400" />
+              <span className="text-foreground">PayPal Orders, Webhooks &amp; Disputes API</span>
             </div>
             <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-emerald-500" />
-              <span>Google Gemini (Pro + Flash)</span>
+              <Cpu className="w-4 h-4 text-emerald-400" />
+              <span className="text-foreground">Google Gemini 1.5 Pro</span>
             </div>
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary-500" />
-              <span>AG Grid Ledger</span>
+              <Layers className="w-4 h-4 text-primary-400" />
+              <span className="text-foreground">AG Grid Ledger</span>
             </div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-foreground" />
-              <span>Next.js 14 + Tailwind CSS</span>
+              <span className="text-foreground">Next.js 14 + Tailwind CSS</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 7: FINAL CTA */}
-      <section className="py-24 bg-gradient-to-b from-card to-background text-center relative overflow-hidden">
+      {/* SECTION 6: FINAL CTA */}
+      <section className="py-20 md:py-24 bg-background text-center relative overflow-hidden">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 relative z-10">
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             Make every AI-agent payment authorized, auditable, and defensible.
           </h2>
-          <p className="text-base text-muted-foreground max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
             Experience the complete solo hackathon demo with seeded PayPal sandbox transactions.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              href="/demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm shadow-lg shadow-primary/25 transition-all hover:scale-[1.02]"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              Launch Live Demo Tour
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link href="/demo">
+              <FintechButton variant="primary" size="lg" className="w-full sm:w-auto">
+                <Play className="w-4 h-4 fill-current" />
+                Launch Live Demo Tour
+              </FintechButton>
             </Link>
 
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-semibold text-sm shadow-sm transition-all hover:scale-[1.02]"
-            >
-              Open Operations Dashboard
-              <ArrowRight className="w-4 h-4" />
+            <Link href="/dashboard">
+              <FintechButton variant="secondary" size="lg" className="w-full sm:w-auto">
+                Open Operations Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </FintechButton>
             </Link>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-border py-8 bg-card/50 text-xs text-muted-foreground">
+      <footer className="border-t border-border py-8 bg-card/60 text-xs text-muted-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            <Shield className="w-4 h-4 text-primary-500" />
             <span className="font-bold text-foreground">Passport</span>
             <span>— Trust, receipt, and dispute-defense layer for AI-agent purchases.</span>
           </div>
@@ -627,4 +544,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

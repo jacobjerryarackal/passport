@@ -2,8 +2,9 @@
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
-import { Sparkles, ShieldAlert, CheckCircle2, ArrowUpRight } from "lucide-react";
+import { ShieldAlert, ExternalLink, ArrowUpRight } from "lucide-react";
 import React, { useState } from "react";
+import { FintechButton } from "@/components/ui/fintech-button";
 
 export function AppHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
   const [triggeringWebhook, setTriggeringWebhook] = useState(false);
@@ -20,7 +21,7 @@ export function AppHeader({ title, subtitle }: { title?: string; subtitle?: stri
       });
       const data = await res.json();
       if (res.ok) {
-        setWebhookMessage(`Simulated dispute ${data.dispute?.paypalDisputeId || "PP-D-..."} triggered!`);
+        setWebhookMessage(`Dispute ${data.dispute?.paypalDisputeId || "PP-D-..."} triggered!`);
         setTimeout(() => {
           window.location.href = `/disputes/${data.dispute?.id || ""}`;
         }, 800);
@@ -35,32 +36,32 @@ export function AppHeader({ title, subtitle }: { title?: string; subtitle?: stri
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card/40 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
+    <header className="h-14 border-b border-border bg-card/70 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
       <div>
-        <h1 className="text-base font-semibold tracking-tight text-foreground">
-          {title || "Dashboard"}
+        <h1 className="text-sm font-semibold tracking-tight text-foreground">
+          {title || "Control Plane"}
         </h1>
         {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {webhookMessage && (
-          <span className="text-xs text-amber-500 font-medium animate-pulse bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+          <span className="text-[11px] text-amber-400 font-mono font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25">
             {webhookMessage}
           </span>
         )}
 
-        <button
+        <FintechButton
+          variant="outline"
+          size="sm"
+          loading={triggeringWebhook}
           onClick={handleSimulateWebhook}
-          disabled={triggeringWebhook}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-600 dark:text-amber-400 transition-colors disabled:opacity-50"
-          title="Simulate incoming PayPal chargeback webhook event"
+          icon={<ShieldAlert className="w-3.5 h-3.5 text-amber-500" />}
         >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          {triggeringWebhook ? "Triggering..." : "Simulate Dispute Webhook"}
-        </button>
+          Simulate Dispute Webhook
+        </FintechButton>
 
         <div className="h-4 w-px bg-border mx-1" />
 
@@ -68,7 +69,7 @@ export function AppHeader({ title, subtitle }: { title?: string; subtitle?: stri
           href="/"
           className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
         >
-          Landing Page
+          <span>Overview</span>
           <ArrowUpRight className="w-3 h-3" />
         </Link>
 
@@ -77,4 +78,3 @@ export function AppHeader({ title, subtitle }: { title?: string; subtitle?: stri
     </header>
   );
 }
-

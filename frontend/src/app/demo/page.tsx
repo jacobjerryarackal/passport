@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
+import { FintechButton } from "@/components/ui/fintech-button";
+import { StatusPill } from "@/components/ui/status-pill";
+import { HashInspector } from "@/components/ui/hash-inspector";
 import {
   Shield,
   FileCheck2,
@@ -19,6 +22,7 @@ import {
   UserCheck,
   Send,
   ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -226,10 +230,10 @@ export default function DemoTourPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-border gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold border border-primary-500/20">
+              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-primary-500/10 text-primary-400 font-bold border border-primary-500/20">
                 Interactive Hackathon Tour
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
                 PayPal AI Hackathon 2026
               </span>
             </div>
@@ -242,19 +246,20 @@ export default function DemoTourPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
+            <FintechButton
+              variant="outline"
+              size="sm"
               onClick={resetTour}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground transition-all disabled:opacity-50"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset Tour
-            </button>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02]"
-            >
-              Go to Full App <ArrowRight className="w-3.5 h-3.5" />
+            </FintechButton>
+            <Link href="/dashboard">
+              <FintechButton variant="primary" size="sm">
+                <span>Go to Full App</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </FintechButton>
             </Link>
           </div>
         </div>
@@ -280,9 +285,9 @@ export default function DemoTourPage() {
                 onClick={() => setActiveStep(s.step)}
                 className={`p-2.5 rounded-lg border text-left transition-all ${
                   isCurrent
-                    ? "border-primary bg-primary/10 text-primary font-bold shadow-sm"
+                    ? "border-primary-500 bg-primary-500/10 text-primary-400 font-bold shadow-xs"
                     : isDone
-                    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"
                     : "border-border bg-card text-muted-foreground opacity-60"
                 }`}
               >
@@ -298,9 +303,9 @@ export default function DemoTourPage() {
 
         {/* Status Notification */}
         {statusMessage && (
-          <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 text-xs font-medium text-primary-700 dark:text-primary-300 flex items-center justify-between">
+          <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 text-xs font-medium text-primary-300 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary-500" />
+              <Sparkles className="w-4 h-4 text-primary-400" />
               <span>{statusMessage}</span>
             </div>
           </div>
@@ -313,45 +318,45 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                     Step 1: Human Sets the Spend Mandate
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     The business owner defines authorized purpose, maximum budget, allowed categories, and refund policy.
                   </p>
                 </div>
-                <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  ACTIVE MANDATE
-                </span>
+                <StatusPill status="approved" label="ACTIVE MANDATE" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Purpose</span>
+                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Purpose</span>
                   <div className="text-sm font-bold text-foreground">Client appreciation gift</div>
                 </div>
-                <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Budget Cap</span>
-                  <div className="text-base font-bold font-mono text-emerald-500">$80.00 USD Maximum</div>
+                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Budget Cap</span>
+                  <div className="text-base font-bold font-mono text-emerald-400 tabular-nums">$80.00 USD Maximum</div>
                 </div>
-                <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Allowed Categories</span>
+                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Allowed Categories</span>
                   <div className="font-mono text-foreground font-semibold">digital gift cards</div>
                 </div>
-                <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Validity &amp; Expiry</span>
+                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Validity &amp; Expiry</span>
                   <div className="font-mono text-foreground font-semibold">24 Hours (Automated expiry)</div>
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <FintechButton
+                  variant="primary"
+                  size="md"
                   onClick={handleStep2}
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2"
                 >
-                  Proceed to Step 2: Test Blocked Attempt <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  <span>Proceed to Step 2: Test Blocked Attempt</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </FintechButton>
               </div>
             </div>
           )}
@@ -361,40 +366,41 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-destructive flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-rose-400 flex items-center gap-2">
                     Step 2: Demonstrate Blocked Attempt ($120 Physical Office Chair)
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     AI agent attempts to buy a $120 office chair. Passport immediately catches and blocks the proposal!
                   </p>
                 </div>
-                <span className="fintech-badge bg-destructive/10 text-destructive border border-destructive/20 font-bold">
-                  BLOCKED
-                </span>
+                <StatusPill status="blocked" label="BLOCKED" />
               </div>
 
-              <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-3 text-xs">
+              <div className="p-4 rounded-lg border border-rose-500/30 bg-rose-500/5 space-y-3 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground text-sm">
                     Proposed: Ergonomic Office Headset &amp; Stand ($120.00 USD)
                   </span>
-                  <span className="font-mono font-bold text-destructive">
+                  <span className="font-mono font-bold text-rose-400 tabular-nums">
                     EXCEEDS $80 CAP
                   </span>
                 </div>
-                <div className="p-3 rounded-lg bg-card border border-destructive/20 text-destructive">
+                <div className="p-3 rounded-lg bg-background border border-rose-500/20 text-rose-300">
                   <strong>Rejection Reason:</strong> Proposal exceeds mandate limit of $80.00 (requested: $120.00) AND category &quot;physical equipment&quot; is outside authorized categories [&quot;digital gift cards&quot;].
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <FintechButton
+                  variant="primary"
+                  size="md"
                   onClick={handleStep3}
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
-                  Proceed to Step 3: Test Authorized Proposal <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  <span>Proceed to Step 3: Test Authorized Proposal</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </FintechButton>
               </div>
             </div>
           )}
@@ -404,19 +410,17 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
                     Step 3: Authorized Proposal ($75 Digital Gift Card)
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     Agent proposes a $75 Starbucks Digital Gift Card. Passport verifies it complies with all mandate bounds.
                   </p>
                 </div>
-                <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                  APPROVED
-                </span>
+                <StatusPill status="approved" label="APPROVED" />
               </div>
 
-              <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-3 text-xs">
+              <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 space-y-3 text-xs">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-bold text-foreground text-sm block">
@@ -426,32 +430,34 @@ export default function DemoTourPage() {
                       Recipient: vip-client@partnercorp.io · Category: digital gift cards
                     </span>
                   </div>
-                  <span className="font-mono font-bold text-emerald-500 text-base">
+                  <span className="font-mono font-bold text-emerald-400 text-base tabular-nums">
                     $75.00 USD
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="p-2 rounded bg-card border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3" /> $75 &le; $80 Cap
+                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-1 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> $75 &le; $80 Cap
                   </div>
-                  <div className="p-2 rounded bg-card border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3" /> Category Match
+                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-1 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Category Match
                   </div>
-                  <div className="p-2 rounded bg-card border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3" /> Active Expiry
+                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-1 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Active Expiry
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <FintechButton
+                  variant="primary"
+                  size="md"
                   onClick={handleStep4And5}
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2"
                 >
-                  Proceed to Step 4 &amp; 5: Execute via PayPal &amp; Issue Passport <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  <span>Proceed to Step 4 &amp; 5: Execute via PayPal &amp; Issue Passport</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </FintechButton>
               </div>
             </div>
           )}
@@ -461,22 +467,20 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                     Step 4 &amp; 5: PayPal Sandbox Settlement &amp; Trust Passport Issued
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     PayPal sandbox order created &amp; captured. Cryptographic Trust Passport generated with SHA-256 fingerprint!
                   </p>
                 </div>
-                <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                  SETTLED &amp; VERIFIED
-                </span>
+                <StatusPill status="approved" label="SETTLED &amp; VERIFIED" />
               </div>
 
-              <div className="p-5 rounded-xl border border-primary/30 bg-primary/5 space-y-4 text-xs">
+              <div className="p-5 rounded-lg border border-primary-500/30 bg-primary-500/5 space-y-4 text-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-border">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-primary-500 tracking-wider">
+                    <span className="text-[10px] uppercase font-bold text-primary-400 tracking-wider font-mono">
                       Trust Passport Credential
                     </span>
                     <h4 className="text-base font-mono font-bold text-foreground">
@@ -484,30 +488,34 @@ export default function DemoTourPage() {
                     </h4>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] uppercase text-muted-foreground block font-semibold">
+                    <span className="text-[10px] uppercase text-muted-foreground block font-semibold font-mono">
                       Seller Protection
                     </span>
-                    <span className="font-mono text-emerald-500 font-bold">ELIGIBLE</span>
+                    <span className="font-mono text-emerald-400 font-bold">ELIGIBLE</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-[11px]">
                   <div>PayPal Order: <strong className="text-foreground">{purchaseData?.paypalOrderId || "PAYPAL-ORD-8X92104M-SB"}</strong></div>
                   <div>Capture ID: <strong className="text-foreground">{purchaseData?.paypalCaptureId || "CAPTURE-7TY90123L-SB"}</strong></div>
-                  <div className="col-span-2 truncate">
-                    SHA-256 Hash: <strong className="text-primary-500">{passportData?.passportHash || "92fe1516cccce243f341d4a8c20fb2d73192078e6e4084a252a3b2cd9bfbca45"}</strong>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground mr-2">SHA-256 Hash:</span>
+                    <HashInspector hash={passportData?.passportHash || "92fe1516cccce243f341d4a8c20fb2d73192078e6e4084a252a3b2cd9bfbca45"} />
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <FintechButton
+                  variant="primary"
+                  size="md"
                   onClick={handleStep6And7}
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold shadow-sm flex items-center gap-2"
+                  className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
                 >
-                  Proceed to Step 6 &amp; 7: Simulate Dispute &amp; Run Autopsy <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  <span>Proceed to Step 6 &amp; 7: Simulate Dispute &amp; Run Autopsy</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </FintechButton>
               </div>
             </div>
           )}
@@ -517,41 +525,42 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
                     Step 6 &amp; 7: Dispute Arrives &amp; Chargeback Autopsy Runs
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     Cardholder claims &quot;Unauthorized Transaction&quot;. Passport links dispute to mandate &amp; receipt, classifies claim, and drafts defense.
                   </p>
                 </div>
-                <span className="fintech-badge bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
-                  AUTOPSY COMPLETE
-                </span>
+                <StatusPill status="action_required" label="AUTOPSY COMPLETE" />
               </div>
 
-              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3 text-xs">
+              <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-3 text-xs">
                 <div className="flex items-center justify-between font-mono">
                   <span className="font-bold text-foreground">
                     Dispute ID: {disputeData?.paypalDisputeId || "PP-D-849201"}
                   </span>
-                  <span className="text-amber-600 dark:text-amber-400 font-bold">
+                  <span className="text-amber-400 font-bold tabular-nums">
                     Readiness: 98/100
                   </span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-card border border-border text-[11px] leading-relaxed">
+                <div className="p-3 rounded-lg bg-background border border-border text-[11px] leading-relaxed text-zinc-300">
                   <strong>Gemini Defense Strategy:</strong> COMPELLING_EVIDENCE_DIGITAL_DELIVERY. The $75 digital gift card was authorized by the business mandate, purchased via authenticated PayPal sandbox, and electronically dispatched.
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <FintechButton
+                  variant="primary"
+                  size="md"
                   onClick={handleStep8CoSign}
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold shadow-md flex items-center gap-2"
+                  className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
                 >
-                  Proceed to Step 8: Human Co-Sign &amp; Submit <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  <span>Proceed to Step 8: Human Co-Sign &amp; Submit</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </FintechButton>
               </div>
             </div>
           )}
@@ -561,40 +570,35 @@ export default function DemoTourPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
                     Step 8: Human Approval &amp; Defense Submission Complete!
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     Strict human-in-the-loop requirement satisfied: human business owner co-signed the exact defense payload before submission to PayPal.
                   </p>
                 </div>
-                <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                  SUBMITTED
-                </span>
+                <StatusPill status="approved" label="SUBMITTED" />
               </div>
 
-              <div className="p-5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 space-y-3 text-xs">
+              <div className="p-5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 space-y-3 text-xs">
                 <div className="flex items-center gap-2 font-bold text-foreground text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   Full Hackathon Narrative Succeeded 100%!
                 </div>
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-zinc-300 text-[11px] leading-relaxed">
                   Every step of the product engineer specification has been verified: human mandate enforcement, blocked out-of-scope proposal, approved transaction, PayPal sandbox settlement, cryptographic Trust Passport, incoming dispute webhook, Chargeback Autopsy, and human co-signature approval.
                 </p>
               </div>
 
               <div className="flex justify-end pt-4 gap-3">
-                <button
-                  onClick={resetTour}
-                  className="px-4 py-2 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted"
-                >
+                <FintechButton variant="outline" size="sm" onClick={resetTour}>
                   Run Tour Again
-                </button>
-                <Link
-                  href="/dashboard"
-                  className="px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm"
-                >
-                  Enter Operations Dashboard &rarr;
+                </FintechButton>
+                <Link href="/dashboard">
+                  <FintechButton variant="primary" size="sm">
+                    <span>Enter Operations Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </FintechButton>
                 </Link>
               </div>
             </div>
@@ -604,4 +608,3 @@ export default function DemoTourPage() {
     </div>
   );
 }
-

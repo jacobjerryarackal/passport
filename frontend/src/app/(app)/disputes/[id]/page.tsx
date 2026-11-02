@@ -2,7 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
 import { AppHeader } from "@/components/layout/app-header";
+import { FintechButton } from "@/components/ui/fintech-button";
+import { StatusPill } from "@/components/ui/status-pill";
+import { StateBoundary } from "@/components/ui/state-boundary";
 import {
   AlertOctagon,
   ShieldCheck,
@@ -19,6 +24,8 @@ import {
   Lock,
   Layers,
   Copy,
+  ArrowLeft,
+  X,
 } from "lucide-react";
 import { formatCurrency, formatDate, truncateHash } from "@/lib/utils";
 import confetti from "canvas-confetti";
@@ -28,6 +35,7 @@ export default function DisputeAutopsyPage() {
   const router = useRouter();
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Co-signature state
   const [showCoSignModal, setShowCoSignModal] = useState(false);
@@ -40,14 +48,18 @@ export default function DisputeAutopsyPage() {
   const fetchDispute = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch(`/api/disputes/${params.id}`);
       const json = await res.json();
       if (json.dispute) {
         setData(json.dispute);
         setDraftText(json.dispute.draftResponse || "");
+      } else {
+        setError(json.error || "Dispute record not found.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || "Failed to retrieve dispute forensics.");
     } finally {
       setLoading(false);
     }
@@ -61,16 +73,22 @@ export default function DisputeAutopsyPage() {
 
   if (loading) {
     return (
-      <div className="py-24 text-center text-muted-foreground animate-pulse text-sm">
-        Opening Chargeback Autopsy room and retrieving dispute forensics...
+      <div className="py-16">
+        <StateBoundary type="loading" message="Opening Chargeback Autopsy room and assembling forensic proofs..." />
       </div>
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="py-24 text-center text-muted-foreground text-sm">
-        Dispute record not found.
+      <div className="py-16">
+        <StateBoundary
+          type="error"
+          title="Dispute Not Found"
+          message={error || "The requested chargeback record does not exist."}
+          actionLabel="Return to Disputes"
+          onAction={() => router.push("/disputes")}
+        />
       </div>
     );
   }
@@ -136,25 +154,31 @@ export default function DisputeAutopsyPage() {
     <>
       <AppHeader
         title={`Chargeback Autopsy: ${dispute.paypalDisputeId}`}
-        subtitle="Forensic evidence reconciliation, AI defense drafting, and human co-signature approval."
+        subtitle="Forensic evidence reconciliation, AI defense drafting, and mandatory human co-signature approval."
       />
 
       <div className="space-y-6 max-w-5xl mx-auto">
-        {/* Header Alert Bar */}
-        <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-card p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
+          <Link href="/disputes">
+            <FintechButton variant="outline" size="sm">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              All Disputes
+            </FintechButton>
+          </Link>
+        </div>
+
+        {/* Forensic Case Room Header */}
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30">
+              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-bold border border-amber-500/25">
                 PayPal Customer Dispute
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold border border-primary-500/20">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60">
                 STAGE: {dispute.disputeLifeCycleStage}
               </span>
               {isSubmitted && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  CO-SIGNED &amp; SUBMITTED
-                </span>
+                <StatusPill status="approved" label="CO-SIGNED &amp; SUBMITTED" />
               )}
             </div>
 
@@ -162,66 +186,68 @@ export default function DisputeAutopsyPage() {
               {dispute.paypalDisputeId}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Buyer Claim: <strong className="text-foreground">{dispute.disputeReason}</strong> · Amount: <strong className="font-mono text-foreground text-sm">{formatCurrency(dispute.disputeAmount, dispute.currency)}</strong>
+              Buyer Claim: <strong className="text-foreground">{dispute.disputeReason}</strong> · Disputed: <strong className="font-mono text-foreground text-sm tabular-nums">{formatCurrency(dispute.disputeAmount, dispute.currency)}</strong>
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="text-right p-3 rounded-xl bg-card border border-border">
-              <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+            <div className="text-right p-3 rounded-lg bg-card border border-border">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground block font-mono">
                 Response Deadline
               </span>
-              <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 tabular-nums">
                 <Clock className="w-3.5 h-3.5" />
                 {formatDate(dispute.dueDate)}
               </span>
             </div>
 
             {!isSubmitted ? (
-              <button
+              <FintechButton
+                variant="primary"
+                size="md"
                 onClick={() => setShowCoSignModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] flex items-center gap-2"
+                className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
               >
                 <UserCheck className="w-4 h-4" />
                 Co-Sign Defense Package
-              </button>
+              </FintechButton>
             ) : (
-              <div className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 Defense Submitted to PayPal
               </div>
             )}
           </div>
         </div>
 
-        {/* Co-signed confirmation banner if already submitted */}
+        {/* Co-signed confirmation banner */}
         {isSubmitted && (
           <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
               <div>
                 <span className="font-bold text-foreground">
-                  Human Co-Signature Recorded &amp; Submitted to PayPal API
+                  Human Co-Signature Recorded &amp; Submitted to PayPal Disputes API
                 </span>
                 <p className="text-muted-foreground text-[11px]">
                   Co-signed by <strong className="text-foreground">{dispute.cosignedBy}</strong> on {formatDate(dispute.cosignedAt || new Date())}. Final evidence payload committed to immutable ledger.
                 </p>
               </div>
             </div>
-            <a
+            <Link
               href="/audit"
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+              className="text-xs font-bold text-emerald-400 hover:underline shrink-0"
             >
               Verify Ledger &rarr;
-            </a>
+            </Link>
           </div>
         )}
 
         {/* Gemini Forensic Classification Card */}
         <div className="fintech-card space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center text-white">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary-500/10 text-primary-400 flex items-center justify-center">
                 <Bot className="w-4 h-4" />
               </div>
               <div>
@@ -234,19 +260,19 @@ export default function DisputeAutopsyPage() {
               </div>
             </div>
 
-            <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+            <span className="font-mono text-xs font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
               Confidence: {((classification.confidence || 0.96) * 100).toFixed(0)}%
             </span>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-muted/30 border border-border text-xs leading-relaxed text-foreground">
+          <div className="p-3.5 rounded-lg bg-zinc-900 border border-border text-xs leading-relaxed text-zinc-300">
             {classification.summary ||
               "Cardholder claims unauthorized transaction. However, the purchase was authorized by an explicit business spend mandate, processed through an authenticated corporate PayPal sandbox wallet, and the digital gift card was delivered to the designated client recipient email."}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-lg border border-border bg-card">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+            <div className="p-3 rounded-lg border border-border bg-background">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
                 Dispute Classification
               </span>
               <span className="font-semibold text-foreground mt-0.5 block">
@@ -254,20 +280,20 @@ export default function DisputeAutopsyPage() {
               </span>
             </div>
 
-            <div className="p-3 rounded-lg border border-border bg-card">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+            <div className="p-3 rounded-lg border border-border bg-background">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
                 Recommended Defense
               </span>
-              <span className="font-semibold text-primary-500 mt-0.5 block font-mono text-[11px]">
+              <span className="font-semibold text-primary-400 mt-0.5 block font-mono text-[11px]">
                 {classification.recommendedStrategy || "COMPELLING_EVIDENCE_DIGITAL_DELIVERY"}
               </span>
             </div>
 
-            <div className="p-3 rounded-lg border border-border bg-card">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+            <div className="p-3 rounded-lg border border-border bg-background">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
                 Risk Assessment
               </span>
-              <span className="font-semibold text-emerald-500 mt-0.5 block flex items-center gap-1 font-mono text-[11px]">
+              <span className="font-semibold text-emerald-400 mt-0.5 block flex items-center gap-1 font-mono text-[11px]">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 {classification.riskAssessment || "LOW_RISK_MERCHANT_FAVOR"}
               </span>
@@ -286,28 +312,31 @@ export default function DisputeAutopsyPage() {
                 Pre-assembled cryptographic artifacts linked to Trust Passport {passport?.passportNumber}.
               </p>
             </div>
-            <span className="text-xs font-mono font-bold text-emerald-500">
+            <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
               {verifiedCount}/{totalCount} Complete ({progressPercent.toFixed(0)}%)
             </span>
           </div>
 
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
             <div
               className="bg-emerald-500 h-full rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {evidenceChecklist.map((item, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="p-3.5 rounded-lg border border-border bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15, delay: idx * 0.04 }}
+                className="p-3.5 rounded-lg border border-border bg-background flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
               >
                 <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-foreground block">
+                    <span className="font-semibold text-foreground block">
                       {item.title}
                     </span>
                     <span className="text-muted-foreground text-[11px]">
@@ -317,23 +346,21 @@ export default function DisputeAutopsyPage() {
                 </div>
 
                 <div className="flex items-center gap-2 ml-auto shrink-0">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    {item.status}
-                  </span>
+                  <StatusPill status="approved" label={item.status} />
                   <span className="text-[10px] font-mono text-muted-foreground">
                     100% Match
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
 
         {/* Evidence Gaps & Mitigation */}
         {evidenceGaps.length > 0 && (
-          <div className="fintech-card border-amber-500/30 bg-card space-y-3">
+          <div className="fintech-card border-amber-500/25 bg-amber-500/5 space-y-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
               <h3 className="text-sm font-bold text-foreground">
                 Evidence Gap Analysis &amp; Mitigation
               </h3>
@@ -342,11 +369,11 @@ export default function DisputeAutopsyPage() {
               {evidenceGaps.map((gap: any, idx: number) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs space-y-1"
+                  className="p-3 rounded-lg border border-amber-500/20 bg-background text-xs space-y-1"
                 >
                   <div className="flex items-center justify-between font-semibold text-foreground">
                     <span>{gap.item}</span>
-                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 uppercase font-bold">
+                    <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">
                       {gap.status}
                     </span>
                   </div>
@@ -359,16 +386,16 @@ export default function DisputeAutopsyPage() {
           </div>
         )}
 
-        {/* Gemini-Drafted Merchant Defense Text */}
+        {/* Gemini-Drafted Defense Response Terminal */}
         <div className="fintech-card space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary-500" />
+              <Sparkles className="w-4 h-4 text-primary-400" />
               <h3 className="text-sm font-bold text-foreground">
                 Draft Merchant Defense Response (PayPal Format)
               </h3>
             </div>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground font-mono">
               Review and edit before human co-signing
             </span>
           </div>
@@ -378,33 +405,35 @@ export default function DisputeAutopsyPage() {
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
             disabled={isSubmitted}
-            className="w-full text-xs font-mono p-4 rounded-xl border border-border bg-muted/30 text-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-80"
+            className="w-full text-xs font-mono p-4 rounded-lg border border-border bg-zinc-900 text-zinc-100 leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-75"
           />
 
           {!isSubmitted && (
             <div className="flex justify-end pt-2">
-              <button
+              <FintechButton
+                variant="primary"
+                size="md"
                 onClick={() => setShowCoSignModal(true)}
-                className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] flex items-center gap-2"
+                className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
               >
                 <UserCheck className="w-4 h-4" />
                 Human Co-Sign &amp; Submit to PayPal
-              </button>
+              </FintechButton>
             </div>
           )}
         </div>
 
         {/* Human Co-Signature Approval Modal */}
         {showCoSignModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6">
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-6">
               <div className="flex items-center justify-between border-b border-border pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500 text-black flex items-center justify-center">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">
+                    <h3 className="text-sm font-bold text-foreground">
                       Human Co-Signature Required
                     </h3>
                     <p className="text-xs text-muted-foreground">
@@ -416,7 +445,7 @@ export default function DisputeAutopsyPage() {
                   onClick={() => setShowCoSignModal(false)}
                   className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
@@ -430,7 +459,7 @@ export default function DisputeAutopsyPage() {
                     required
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground font-semibold"
+                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 
@@ -443,13 +472,13 @@ export default function DisputeAutopsyPage() {
                     required
                     value={signerTitle}
                     onChange={(e) => setSignerTitle(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground"
+                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 
-                <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
+                <div className="p-3 rounded-lg bg-zinc-900 border border-border space-y-2">
                   <div className="flex items-center gap-2 text-foreground font-semibold">
-                    <Lock className="w-3.5 h-3.5 text-primary-500" />
+                    <Lock className="w-3.5 h-3.5 text-primary-400" />
                     <span>Co-Signer Attestation Statement</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -458,21 +487,23 @@ export default function DisputeAutopsyPage() {
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
-                  <button
+                  <FintechButton
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowCoSignModal(false)}
-                    className="px-4 py-2 rounded-lg border border-border bg-card hover:bg-muted font-medium text-foreground"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </FintechButton>
+                  <FintechButton
                     type="submit"
+                    variant="primary"
+                    size="sm"
                     disabled={isSubmitting}
-                    className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md transition-all hover:scale-[1.02] flex items-center gap-2 disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
                     {isSubmitting ? "Submitting to PayPal..." : "Co-Sign & Submit to PayPal"}
-                  </button>
+                  </FintechButton>
                 </div>
               </form>
             </div>
@@ -482,4 +513,3 @@ export default function DisputeAutopsyPage() {
     </>
   );
 }
-

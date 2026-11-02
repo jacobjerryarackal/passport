@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { AppHeader } from "@/components/layout/app-header";
+import { FintechButton } from "@/components/ui/fintech-button";
+import { StatusPill } from "@/components/ui/status-pill";
+import { StateBoundary } from "@/components/ui/state-boundary";
 import {
   FileCheck2,
   Plus,
@@ -14,6 +17,8 @@ import {
   ArrowRight,
   RefreshCw,
   Search,
+  X,
+  ShieldCheck,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -143,67 +148,74 @@ export default function MandatesPage() {
     <>
       <AppHeader
         title="Spend Mandates"
-        subtitle="Cryptographic authorization boundaries governing AI agent purchase powers."
+        subtitle="Cryptographic authorization boundaries governing autonomous AI agent purchasing powers."
       />
 
       <div className="space-y-6">
-        {/* Top Controls */}
+        {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search mandates by title, purpose, or category..."
+              placeholder="Filter mandates by title, purpose, or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={fetchMandates}
-              className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Refresh"
+              className="p-2 rounded-lg border border-border bg-card hover:bg-zinc-800 text-muted-foreground hover:text-foreground transition-colors"
+              title="Refresh Mandates"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
-            <button
+            <FintechButton
+              variant="primary"
+              size="sm"
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02]"
             >
               <Plus className="w-4 h-4" />
               New Spend Mandate
-            </button>
+            </FintechButton>
           </div>
         </div>
 
-        {/* Mandates Ledger Table (Fintech AG Grid style) */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+        {/* Mandates Ledger Table */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+              <thead className="bg-zinc-900/60 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">Mandate & Purpose</th>
-                  <th className="py-3 px-4">Budget Cap</th>
-                  <th className="py-3 px-4">Spent / Usage</th>
-                  <th className="py-3 px-4">Allowed Categories</th>
-                  <th className="py-3 px-4">Expiry</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4 font-mono">Mandate &amp; Purpose</th>
+                  <th className="py-3.5 px-4 font-mono">Budget Cap</th>
+                  <th className="py-3.5 px-4 font-mono">Usage / Spent</th>
+                  <th className="py-3.5 px-4 font-mono">Allowed Categories</th>
+                  <th className="py-3.5 px-4 font-mono">Expiry</th>
+                  <th className="py-3.5 px-4 font-mono">Status</th>
+                  <th className="py-3.5 px-4 text-right font-mono">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-border/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                      Loading mandates...
+                    <td colSpan={7} className="py-12">
+                      <StateBoundary type="loading" message="Loading active spend mandates..." />
                     </td>
                   </tr>
                 ) : filteredMandates.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                      No mandates found. Click &quot;New Spend Mandate&quot; to authorize your first AI agent budget.
+                    <td colSpan={7} className="py-12">
+                      <StateBoundary
+                        type="empty"
+                        title="No Spend Mandates Found"
+                        message="Authorize your first mandate with an enforced budget cap and category limits."
+                        actionLabel="Create Mandate"
+                        onAction={() => setShowCreateModal(true)}
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -221,72 +233,65 @@ export default function MandatesPage() {
                     }
 
                     return (
-                      <tr key={mandate.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3.5 px-4 font-medium">
+                      <tr key={mandate.id} className="hover:bg-zinc-900/40 transition-colors">
+                        <td className="py-3.5 px-4">
                           <div className="font-semibold text-foreground text-xs">
                             {mandate.title}
                           </div>
-                          <div className="text-[11px] text-muted-foreground line-clamp-1">
+                          <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
                             {mandate.purpose}
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-foreground">
+
+                        <td className="py-3.5 px-4 font-mono font-bold text-foreground tabular-nums">
                           {formatCurrency(mandate.maxAmount, mandate.currency)}
                         </td>
+
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-semibold text-foreground">
+                            <span className="font-mono text-xs font-semibold text-foreground tabular-nums">
                               {formatCurrency(spent, mandate.currency)}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground font-mono">
                               ({usagePercent.toFixed(0)}%)
                             </span>
                           </div>
-                          <div className="w-24 bg-muted rounded-full h-1 mt-1 overflow-hidden">
+                          <div className="w-24 bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
                             <div
-                              className="bg-primary-600 h-full rounded-full"
+                              className="bg-primary-500 h-full rounded-full transition-all"
                               style={{ width: `${usagePercent}%` }}
                             />
                           </div>
                         </td>
+
                         <td className="py-3.5 px-4">
                           <div className="flex flex-wrap gap-1">
                             {cats.map((c, i) => (
                               <span
                                 key={i}
-                                className="px-2 py-0.5 rounded bg-muted text-[10px] font-mono font-medium text-foreground border border-border"
+                                className="px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono font-medium text-zinc-300 border border-zinc-700/60"
                               >
                                 {c}
                               </span>
                             ))}
                           </div>
                         </td>
+
                         <td className="py-3.5 px-4 text-muted-foreground text-[11px]">
-                          <div className="flex items-center gap-1 font-mono">
+                          <div className="flex items-center gap-1 font-mono tabular-nums">
                             <Clock className="w-3 h-3 text-muted-foreground" />
                             {formatDate(mandate.expiresAt)}
                           </div>
                         </td>
+
                         <td className="py-3.5 px-4">
-                          <span
-                            className={`fintech-badge ${
-                              mandate.status === "ACTIVE"
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                mandate.status === "ACTIVE" ? "bg-emerald-500" : "bg-muted-foreground"
-                              }`}
-                            />
-                            {mandate.status}
-                          </span>
+                          <StatusPill status={mandate.status} />
                         </td>
+
                         <td className="py-3.5 px-4 text-right">
                           <a
                             href={`/purchases?mandateId=${mandate.id}`}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary-400 hover:underline"
                           >
                             Spend Console <ArrowRight className="w-3 h-3" />
                           </a>
@@ -302,19 +307,19 @@ export default function MandatesPage() {
 
         {/* Create Mandate Modal with Natural Language AI Parser */}
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-border pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary-500/10 text-primary-400 flex items-center justify-center">
                     <FileCheck2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">
+                    <h3 className="text-sm font-bold text-foreground">
                       Authorize New Spend Mandate
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Set cryptographic boundaries for an AI purchasing agent.
+                      Set cryptographic boundaries for an autonomous purchasing agent.
                     </p>
                   </div>
                 </div>
@@ -322,32 +327,34 @@ export default function MandatesPage() {
                   onClick={() => setShowCreateModal(false)}
                   className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Natural Language AI Prompt Box */}
-              <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/20 space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-primary-700 dark:text-primary-300">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-primary-500" />
+              <div className="p-4 rounded-lg bg-zinc-900 border border-border space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 text-zinc-300">
+                    <Sparkles className="w-3.5 h-3.5 text-primary-400" />
                     Gemini Natural Language Mandate Parser
                   </span>
-                  <button
+                  <FintechButton
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleParsePrompt}
                     disabled={parsing}
-                    className="px-2.5 py-1 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-[11px] font-medium transition-colors disabled:opacity-50"
+                    className="h-7 text-xs"
                   >
-                    {parsing ? "Parsing Prompt..." : "Parse with Gemini"}
-                  </button>
+                    {parsing ? "Parsing..." : "Parse with Gemini"}
+                  </FintechButton>
                 </div>
                 <textarea
                   rows={2}
                   value={nlPrompt}
                   onChange={(e) => setNlPrompt(e.target.value)}
                   placeholder="e.g. Authorize my agent to buy a digital gift card for a client, up to $80, valid for 24 hours."
-                  className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
 
@@ -363,7 +370,7 @@ export default function MandatesPage() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -376,7 +383,7 @@ export default function MandatesPage() {
                       required
                       value={purpose}
                       onChange={(e) => setPurpose(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -390,7 +397,7 @@ export default function MandatesPage() {
                       required
                       value={maxAmount}
                       onChange={(e) => setMaxAmount(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground font-mono"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -403,7 +410,7 @@ export default function MandatesPage() {
                       required
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground font-mono"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -416,7 +423,7 @@ export default function MandatesPage() {
                       required
                       value={allowedCategories}
                       onChange={(e) => setAllowedCategories(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                       placeholder="e.g. digital gift cards, subscriptions"
                     />
                   </div>
@@ -430,39 +437,41 @@ export default function MandatesPage() {
                       required
                       value={expiryHours}
                       onChange={(e) => setExpiryHours(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground font-mono"
+                      className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-foreground mb-1">
-                    Refund & Dispute Policy
+                    Refund &amp; Dispute Defense Policy
                   </label>
                   <input
                     type="text"
                     required
                     value={refundPolicy}
                     onChange={(e) => setRefundPolicy(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-card text-foreground"
+                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                  <button
+                  <FintechButton
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </FintechButton>
+                  <FintechButton
                     type="submit"
+                    variant="primary"
+                    size="sm"
                     disabled={creating}
-                    className="px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
                   >
                     {creating ? "Authorizing Mandate..." : "Authorize Mandate"}
-                  </button>
+                  </FintechButton>
                 </div>
               </form>
             </div>
@@ -472,4 +481,3 @@ export default function MandatesPage() {
     </>
   );
 }
-

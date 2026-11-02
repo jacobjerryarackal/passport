@@ -2,6 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { AppHeader } from "@/components/layout/app-header";
+import { FintechButton } from "@/components/ui/fintech-button";
+import { StatusPill } from "@/components/ui/status-pill";
+import { HashInspector } from "@/components/ui/hash-inspector";
+import { StateBoundary } from "@/components/ui/state-boundary";
 import {
   Layers,
   Search,
@@ -107,20 +111,20 @@ export default function EvidenceTimelinePage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex flex-1 items-center gap-3 max-w-lg">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search evidence by title, hash, or type..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
 
             <select
               value={filterSource}
               onChange={(e) => setFilterSource(e.target.value)}
-              className="py-2 px-3 rounded-lg border border-border bg-card text-xs text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="py-2 px-3 rounded-lg border border-border bg-card text-xs text-foreground font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="ALL">All Sources</option>
               <option value="SYSTEM">System Engine</option>
@@ -132,54 +136,55 @@ export default function EvidenceTimelinePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={fetchEvidence}
-              className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Refresh"
+              className="p-2 rounded-lg border border-border bg-card hover:bg-zinc-800 text-muted-foreground hover:text-foreground transition-colors"
+              title="Refresh Ledger"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={exportCSV}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground transition-all"
-            >
+            <FintechButton variant="outline" size="sm" onClick={exportCSV}>
               <Download className="w-3.5 h-3.5" />
-              Export CSV Ledger
-            </button>
+              Export RFC 4180 CSV
+            </FintechButton>
           </div>
         </div>
 
-        {/* AG Grid style Evidence Table */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+        {/* Evidence Table */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+              <thead className="bg-zinc-900/60 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">Artifact Title &amp; Description</th>
-                  <th className="py-3 px-4">Evidence Type</th>
-                  <th className="py-3 px-4">Source System</th>
-                  <th className="py-3 px-4">Integrity Hash (SHA-256)</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Timestamp</th>
+                  <th className="py-3.5 px-4 font-mono">Artifact Title &amp; Description</th>
+                  <th className="py-3.5 px-4 font-mono">Evidence Type</th>
+                  <th className="py-3.5 px-4 font-mono">Source System</th>
+                  <th className="py-3.5 px-4 font-mono">Integrity Hash (SHA-256)</th>
+                  <th className="py-3.5 px-4 font-mono">Status</th>
+                  <th className="py-3.5 px-4 text-right font-mono">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border font-medium">
+              <tbody className="divide-y divide-border/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      Loading evidence ledger...
+                    <td colSpan={6} className="py-12">
+                      <StateBoundary type="loading" message="Loading evidence ledger records..." />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      No matching evidence items found.
+                    <td colSpan={6} className="py-12">
+                      <StateBoundary
+                        type="empty"
+                        title="No Matching Artifacts"
+                        message="Try clearing your search query or selecting a different source filter."
+                      />
                     </td>
                   </tr>
                 ) : (
                   filtered.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={item.id} className="hover:bg-zinc-900/40 transition-colors">
                       <td className="py-3.5 px-4 max-w-sm">
-                        <div className="font-bold text-foreground text-xs">
+                        <div className="font-semibold text-foreground text-xs">
                           {item.title}
                         </div>
                         <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
@@ -187,35 +192,32 @@ export default function EvidenceTimelinePage() {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-600 dark:text-primary-400">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-400">
                         {item.type}
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="fintech-badge bg-muted text-foreground border border-border">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-zinc-300 border border-zinc-700/60">
                           {item.source === "PAYPAL_API" ? (
-                            <CreditCard className="w-3 h-3 text-primary-500" />
+                            <CreditCard className="w-3 h-3 text-primary-400" />
                           ) : item.source === "GEMINI_AGENT" ? (
-                            <Bot className="w-3 h-3 text-primary-500" />
+                            <Bot className="w-3 h-3 text-emerald-400" />
                           ) : (
-                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
                           )}
                           {item.source}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-muted-foreground">
-                        {truncateHash(item.hash, 8, 8)}
+                      <td className="py-3.5 px-4">
+                        <HashInspector hash={item.hash} truncateLength={6} />
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="fintech-badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {item.status}
-                        </span>
+                        <StatusPill status="approved" label={item.status} />
                       </td>
 
-                      <td className="py-3.5 px-4 text-right text-[11px] text-muted-foreground font-mono">
+                      <td className="py-3.5 px-4 text-right text-[11px] text-muted-foreground font-mono tabular-nums">
                         {formatDate(item.createdAt)}
                       </td>
                     </tr>
@@ -229,4 +231,3 @@ export default function EvidenceTimelinePage() {
     </>
   );
 }
-

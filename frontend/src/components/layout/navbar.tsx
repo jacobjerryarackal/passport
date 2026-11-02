@@ -1,33 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Sparkles, Play, ArrowRight, Github } from "lucide-react";
+import { Shield, Play, Github, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center text-white shadow-sm shadow-primary/20 group-hover:scale-105 transition-transform">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-md bg-[#0070BA] flex items-center justify-center text-white shadow-sm shadow-[#0070BA]/25">
+            <Shield className="w-4 h-4 text-white" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold tracking-tight text-lg text-foreground flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="font-bold tracking-tight text-sm text-foreground">
               Passport
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 font-semibold border border-primary-500/20">
-                AI + PayPal
-              </span>
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surfaceSubtle text-muted-foreground border border-border">
+              PayPal AI
             </span>
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+        {/* Navigation Links */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-muted-foreground">
           <Link href="#problem" className="hover:text-foreground transition-colors">
             Problem
           </Link>
           <Link href="#how-it-works" className="hover:text-foreground transition-colors">
-            How It Works
+            Architecture
           </Link>
           <Link href="#trust-passport" className="hover:text-foreground transition-colors">
             Trust Passport
@@ -40,28 +42,37 @@ export function Navbar() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
           <ThemeToggle />
-          
+
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-surfaceSubtle hover:bg-muted text-xs font-medium text-foreground transition-colors"
+          >
+            <Github className="w-3.5 h-3.5" />
+            <span>GitHub</span>
+          </a>
+
           <Link
             href="/demo"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground transition-all hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#0070BA]/40 bg-[#0070BA]/10 hover:bg-[#0070BA]/20 text-xs font-semibold text-[#0070BA] dark:text-[#38BDF8] transition-colors"
           >
-            <Play className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400 fill-current" />
-            Interactive Demo
+            <Play className="w-3 h-3 fill-current" />
+            <span>Live Demo</span>
           </Link>
 
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-medium shadow-sm shadow-primary/25 transition-all hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-[#0070BA] hover:bg-[#005EA6] text-white text-xs font-semibold shadow-sm shadow-[#0070BA]/20 transition-all"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Launch App
-            <ArrowRight className="w-3.5 h-3.5 hidden sm:inline" />
+            <span>Control Plane</span>
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
     </header>
   );
 }
-
