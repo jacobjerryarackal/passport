@@ -17,40 +17,48 @@ import {
 export default function LandingPage() {
   const [isVerified, setIsVerified] = useState(false);
 
+  // Slower, smoother spring configuration per user feedback
+  const smoothSpring = {
+    type: "spring" as const,
+    stiffness: 80,
+    damping: 20,
+    mass: 1,
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0C0F] text-[#1D1E20] dark:text-white font-sans antialiased w-full overflow-x-hidden selection:bg-[#60CDFF] selection:text-black">
-      {/* 0. NAVIGATION BAR */}
-      <header className="sticky top-0 z-50 w-full bg-[#60CDFF] dark:bg-[#001C64] border-b border-black/10 dark:border-white/10 transition-colors">
+      {/* 1. NAVBAR — PREMIUM STICKY FLOATING NAV (MIDNIGHT NAVY WITH BACKDROP BLUR & SUBTLE BORDER) */}
+      <header className="sticky top-0 z-50 w-full bg-[#002991]/80 backdrop-blur-md border-b border-white/10 transition-colors">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-18 flex items-center justify-between">
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-[#002991] font-display font-black text-lg shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#002991] font-display font-black text-base shadow-sm">
               P
             </div>
-            <span className="font-display font-black text-xl tracking-tight text-black dark:text-white">
+            <span className="font-display font-black text-xl tracking-tight text-white">
               Passport
             </span>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-black/80 dark:text-white/80">
-            <a href="#problem" className="hover:text-black dark:hover:text-white transition-colors">
+          {/* Navigation Links — Wider Spacing (gap-8) and Vertically Centered */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/80">
+            <a href="#problem" className="hover:text-white transition-colors">
               The problem
             </a>
-            <a href="#how-it-works" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#how-it-works" className="hover:text-white transition-colors">
               How it works
             </a>
-            <a href="#dispute-defense" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#dispute-defense" className="hover:text-white transition-colors">
               Dispute defense
             </a>
           </nav>
 
           {/* Controls: Theme Toggle & Full-Pill CTA */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
 
             <Link href="/demo">
-              <span className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-white bg-black dark:bg-white dark:text-[#002991] hover:bg-black/85 dark:hover:bg-white/90 transition-all active:scale-[0.98] shadow-sm">
+              <span className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-[#002991] bg-white hover:bg-white/90 transition-all active:scale-[0.98] shadow-sm">
                 Launch demo
               </span>
             </Link>
@@ -58,60 +66,60 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 1. HERO — SKY BLUE IMMERSIVE BAND (#60CDFF) FULL-BLEED */}
+      {/* 2. HERO — SKY BLUE IMMERSIVE BAND (#60CDFF) FULL-BLEED */}
       <section className="relative bg-[#60CDFF] dark:bg-[#001C64] transition-colors py-16 md:py-24 lg:py-28">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Left 55% Column: Heavy Black Display Headline + Subhead + Two Pill CTAs */}
+            {/* Left 55% Column: Refined Headline (text-[56px] desktop, text-[40px] mobile, 1.1 line-height) + Subhead (50ch) */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="lg:col-span-7 space-y-8 text-left"
+              transition={smoothSpring}
+              className="lg:col-span-7 space-y-7 text-left"
             >
-              {/* Headline in 2 lines, 88-96px on large screens, weight 900, tracking -0.03em */}
-              <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-[88px] text-black dark:text-white leading-[1.02] tracking-[-0.03em]">
+              {/* Headline: text-[40px] mobile, text-[56px] desktop, leading-[1.1], weight 900 */}
+              <h1 className="font-display font-black text-[40px] sm:text-[48px] lg:text-[56px] text-black dark:text-white leading-[1.1] tracking-[-0.03em]">
                 AI agents can spend money.
                 <br />
                 Passport makes every purchase accountable.
               </h1>
 
-              {/* Subhead 20px, max 58ch */}
-              <p className="text-lg sm:text-[20px] text-black/85 dark:text-white/85 leading-relaxed max-w-[58ch] font-normal">
+              {/* Subhead: text-[18px], max-width 50ch */}
+              <p className="text-[18px] text-black/85 dark:text-white/85 leading-relaxed max-w-[50ch] font-normal">
                 The pre-spend policy gate, cryptographic attestation chain, and automated dispute defense
                 layer for autonomous commerce.
               </p>
 
-              {/* Two Pill CTAs (No badge above headline) */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+              {/* Two Pill CTAs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-1">
                 <Link href="/demo">
-                  <span className="inline-flex items-center justify-center px-8 py-4 rounded-full text-base sm:text-[18px] font-black text-white bg-black dark:bg-white dark:text-[#002991] hover:bg-black/85 dark:hover:bg-white/90 transition-transform active:scale-[0.98] shadow-md w-full sm:w-auto text-center">
+                  <span className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-base font-black text-white bg-black dark:bg-white dark:text-[#002991] hover:bg-black/85 dark:hover:bg-white/90 transition-transform active:scale-[0.98] shadow-md w-full sm:w-auto text-center">
                     Launch interactive demo
                   </span>
                 </Link>
 
                 <Link href="/disputes/disp-chargeback-demo">
-                  <span className="inline-flex items-center justify-center px-8 py-4 rounded-full text-base sm:text-[18px] font-black text-black dark:text-white bg-transparent border-2 border-black dark:border-white hover:bg-black/10 dark:hover:bg-white/10 transition-transform active:scale-[0.98] w-full sm:w-auto text-center">
+                  <span className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-base font-black text-black dark:text-white bg-transparent border-2 border-black dark:border-white hover:bg-black/10 dark:hover:bg-white/10 transition-transform active:scale-[0.98] w-full sm:w-auto text-center">
                     View dispute defense
                   </span>
                 </Link>
               </div>
             </motion.div>
 
-            {/* Right 45% Column: Flat Live Trust Artifact inside the Blue Band */}
+            {/* Right 45% Column: Flat Live Trust Artifact with Glass Top-Edge Highlight & 8s Float */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ type: "spring", stiffness: 320, damping: 32, delay: 0.1 }}
+              transition={{ ...smoothSpring, delay: 0.15 }}
               className="lg:col-span-5"
             >
-              {/* Subtle continuous 6s vertical float (no tilt, no 3D, shadow under 0.08) */}
+              {/* Slower subtle continuous 8s float */}
               <motion.div
                 animate={{ y: [-4, 4, -4] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="bg-white dark:bg-[#1B1B1F] text-[#1D1E20] dark:text-white rounded-[24px] p-6 sm:p-8 shadow-[0_24px_48px_rgba(0,0,0,0.08)] border border-black/5 dark:border-white/10 space-y-6"
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="bg-white dark:bg-[#1B1B1F] text-[#1D1E20] dark:text-white rounded-[24px] p-6 sm:p-8 shadow-[0_24px_48px_rgba(0,0,0,0.08)] border border-black/10 dark:border-white/15 border-t-white/80 dark:border-t-white/40 relative overflow-hidden space-y-6 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/70 before:to-transparent"
               >
                 {/* Artifact Header Strip with 25px Pills */}
                 <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
@@ -173,11 +181,11 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Interactive Verification Button (Pill, no particle burst) */}
+                {/* Interactive Verification Button with Hover Lift (-translate-y-1) and Soft Blue Glow */}
                 <button
                   type="button"
                   onClick={() => setIsVerified(!isVerified)}
-                  className="w-full py-3 px-5 rounded-[25px] bg-[#002991] text-white font-bold text-xs hover:bg-[#001C64] dark:bg-[#60CDFF] dark:text-[#002991] dark:hover:bg-[#4bc3fa] transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="w-full py-3.5 px-5 rounded-[25px] bg-[#002991] text-white font-bold text-xs hover:bg-[#001C64] dark:bg-[#60CDFF] dark:text-[#002991] dark:hover:bg-[#4bc3fa] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(96,205,255,0.4)] active:translate-y-0 active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>{isVerified ? "Cryptographic Seal Re-verified" : "Verify Attestation Seal"}</span>
@@ -188,7 +196,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 2. WHITE SECTION — “THE PROBLEM” IN ONE EDITORIAL COLUMN */}
+      {/* 3. WHITE SECTION — “THE PROBLEM” IN ONE EDITORIAL COLUMN */}
       <section id="problem" className="py-24 md:py-32 bg-white dark:bg-[#0B0C0F] transition-colors">
         <div className="max-w-4xl mx-auto px-6 sm:px-8 space-y-8 text-left">
           {/* Eyebrow */}
@@ -201,7 +209,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            transition={smoothSpring}
             className="text-[20px] text-[#1D1E20] dark:text-white/90 leading-[1.6] max-w-[62ch] font-normal"
           >
             Autonomous agents execute procurement, cloud infrastructure provisioning, and software
@@ -215,7 +223,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 320, damping: 32, delay: 0.08 }}
+            transition={{ ...smoothSpring, delay: 0.15 }}
             className="text-[24px] sm:text-[28px] font-semibold text-[#002991] dark:text-[#60CDFF] leading-[1.3] pt-4 border-l-4 border-[#002991] dark:border-[#60CDFF] pl-6"
           >
             &ldquo;Gateways settle dollars. They cannot prove to an issuing bank that an authorized human
@@ -224,12 +232,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 3. NAVY IMMERSIVE SECTION (#002991) — “HOW IT WORKS” PIPELINE */}
+      {/* 4. NAVY IMMERSIVE SECTION (#002991) — “HOW IT WORKS” PIPELINE WITH TECHNICAL GRID & STATUS PILLS */}
       <section
         id="how-it-works"
-        className="py-24 md:py-32 bg-[#002991] dark:bg-[#001C64] text-white transition-colors"
+        className="relative py-24 md:py-32 bg-[#002991] dark:bg-[#001C64] text-white transition-colors overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 space-y-14">
+        {/* Subtle large-scale technical grid pattern with radial gradient mask */}
+        <div className="navy-pipeline-grid" aria-hidden="true" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 space-y-14">
           {/* Eyebrow & Section Heading */}
           <div className="space-y-3">
             <div className="text-xs font-bold uppercase tracking-wider text-[#60CDFF]">
@@ -240,7 +251,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          {/* Four steps in a horizontal ledger with vertical white hairlines */}
+          {/* Four steps in a horizontal ledger with vertical white hairlines and 0.15s stagger */}
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -250,7 +261,7 @@ export default function LandingPage() {
               visible: {
                 opacity: 1,
                 transition: {
-                  staggerChildren: 0.08,
+                  staggerChildren: 0.15,
                 },
               },
             }}
@@ -263,7 +274,7 @@ export default function LandingPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                  transition: smoothSpring,
                 },
               }}
               className="py-6 md:py-0 md:pr-8 first:md:pl-0 space-y-4"
@@ -275,7 +286,11 @@ export default function LandingPage() {
                   Account owner bounds hard dollar cap, category allowlist, and expiration before execution.
                 </p>
               </div>
-              <div className="font-mono text-xs text-white/60 tabular-nums">18:29:00 UTC</div>
+              <div>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-[11px] font-mono uppercase tracking-wider text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/25 font-semibold">
+                  [ MANDATE ACTIVE ]
+                </span>
+              </div>
             </motion.div>
 
             {/* Step 02 */}
@@ -285,7 +300,7 @@ export default function LandingPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                  transition: smoothSpring,
                 },
               }}
               className="py-6 md:py-0 md:px-8 space-y-4"
@@ -297,7 +312,11 @@ export default function LandingPage() {
                   Pre-spend policy engine evaluates and blocks out-of-bounds agent calls pre-settlement.
                 </p>
               </div>
-              <div className="font-mono text-xs text-white/60 tabular-nums">18:29:12 UTC</div>
+              <div>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-[11px] font-mono uppercase tracking-wider text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/25 font-semibold">
+                  [ POLICY ENFORCED ]
+                </span>
+              </div>
             </motion.div>
 
             {/* Step 03 */}
@@ -307,7 +326,7 @@ export default function LandingPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                  transition: smoothSpring,
                 },
               }}
               className="py-6 md:py-0 md:px-8 space-y-4"
@@ -319,7 +338,11 @@ export default function LandingPage() {
                   Orders v2 capture creates binding settlement with confirmed Seller Protection eligibility.
                 </p>
               </div>
-              <div className="font-mono text-xs text-white/60 tabular-nums">18:29:45 UTC</div>
+              <div>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-[11px] font-mono uppercase tracking-wider text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/25 font-semibold">
+                  [ SETTLEMENT VERIFIED ]
+                </span>
+              </div>
             </motion.div>
 
             {/* Step 04 */}
@@ -329,7 +352,7 @@ export default function LandingPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                  transition: smoothSpring,
                 },
               }}
               className="py-6 md:py-0 md:pl-8 space-y-4"
@@ -341,13 +364,17 @@ export default function LandingPage() {
                   Attestation binds mandate, intent trace, and settlement into an immutable receipt.
                 </p>
               </div>
-              <div className="font-mono text-xs text-white/60 tabular-nums">18:30:00 UTC</div>
+              <div>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-[6px] text-[11px] font-mono uppercase tracking-wider text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/25 font-semibold">
+                  [ ATTESTATION SEALED ]
+                </span>
+              </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* 4. WHITE SECTION — “DISPUTE DEFENSE” SPLIT LAYOUT */}
+      {/* 5. WHITE SECTION — “DISPUTE DEFENSE” SPLIT LAYOUT */}
       <section
         id="dispute-defense"
         className="py-24 md:py-32 bg-white dark:bg-[#0B0C0F] transition-colors"
@@ -364,7 +391,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              transition={smoothSpring}
               className="lg:col-span-5 space-y-5"
             >
               <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-[48px] text-[#002991] dark:text-white leading-[1.08] tracking-[-0.02em]">
@@ -381,7 +408,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ type: "spring", stiffness: 320, damping: 32, delay: 0.08 }}
+              transition={{ ...smoothSpring, delay: 0.15 }}
               className="lg:col-span-7 space-y-6"
             >
               {/* Segments Stack */}
@@ -456,7 +483,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. FOOTER BAND — NAVY */}
+      {/* 6. FOOTER BAND — NAVY */}
       <footer className="bg-[#002991] dark:bg-[#001C64] text-white py-12 border-t border-white/15 transition-colors">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="font-display font-bold text-sm tracking-tight text-white">
