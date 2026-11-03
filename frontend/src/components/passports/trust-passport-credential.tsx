@@ -22,6 +22,7 @@ import { formatCurrency, formatDate, truncateHash } from "@/lib/utils";
 import { HashInspector } from "@/components/ui/hash-inspector";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
+import confetti from "canvas-confetti";
 
 interface TrustPassportCredentialProps {
   passport: any;
@@ -45,6 +46,7 @@ export function TrustPassportCredential({
     "authorization" | "transaction" | "agentTrail" | "receipt" | "disputeReadiness"
   >("authorization");
   const [isScanning, setIsScanning] = useState(false);
+  const [justVerified, setJustVerified] = useState(false);
 
   const purchase = passport.purchase || {};
   const mandate = passport.mandate || {};
@@ -75,7 +77,18 @@ export function TrustPassportCredential({
 
   const handleTriggerScan = () => {
     setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 1200);
+    setJustVerified(false);
+    setTimeout(() => {
+      setIsScanning(false);
+      setJustVerified(true);
+      confetti({
+        particleCount: 55,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ["#0070BA", "#10B981", "#36A0F7"],
+      });
+      setTimeout(() => setJustVerified(false), 3500);
+    }, 1100);
   };
 
   const hasDispute = purchase.disputes && purchase.disputes.length > 0;
@@ -135,15 +148,25 @@ export function TrustPassportCredential({
           </div>
 
           <Button
-            variant="outline"
+            variant={justVerified ? "secondary" : "outline"}
             size="sm"
             onClick={handleTriggerScan}
             loading={isScanning}
-            leadingIcon={<Fingerprint className="w-3.5 h-3.5 text-primary" />}
-            className="hidden sm:inline-flex"
+            leadingIcon={
+              justVerified ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-50 duration-200" />
+              ) : (
+                <Fingerprint className="w-3.5 h-3.5 text-primary" />
+              )
+            }
+            className={`hidden sm:inline-flex transition-all ${
+              justVerified
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                : ""
+            }`}
             tooltip="Run live cryptographic fingerprint verification"
           >
-            Verify Seal
+            {justVerified ? "Seal Verified!" : "Verify Seal"}
           </Button>
         </div>
       </div>

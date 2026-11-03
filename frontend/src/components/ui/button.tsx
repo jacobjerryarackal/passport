@@ -38,12 +38,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     // Resolve leading icon (support legacy `icon` prop as leading)
     const activeLeadingIcon = leadingIcon || icon;
-    const isIconOnly = variant === "icon-only" || (!children && Boolean(activeLeadingIcon || trailingIcon));
+    const isIconOnly = variant === "icon-only" || size === "icon" || (!children && Boolean(activeLeadingIcon || trailingIcon));
 
     // Base alignment & typography rules:
     // strict inline-flex, items-center, justify-center, nowrap, font-medium, leading-none
+    // Emil Kowalski tactile active scale (0.97) with custom snappy ease-out curve
     const baseClasses =
-      "inline-flex items-center justify-center whitespace-nowrap font-medium text-center transition-all duration-150 select-none border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 active:scale-[0.985]";
+      "inline-flex items-center justify-center whitespace-nowrap font-medium text-center transition-[transform,background-color,border-color,color,box-shadow] duration-140 ease-[cubic-bezier(0.23,1,0.32,1)] select-none border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 active:scale-[0.97]";
 
     // Variant color & depth styling
     const variantClasses = {
@@ -62,8 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     // Strict dimensions: height, horizontal padding, and icon gap
-    const effectiveIsIcon = isIconOnly || size === "icon";
-    const sizeClasses = effectiveIsIcon
+    const sizeClasses = isIconOnly
       ? {
           sm: "h-8 w-8 p-0 rounded-md",
           md: "h-9 w-9 p-0 rounded-md",
@@ -112,4 +112,3 @@ Button.displayName = "Button";
 
 // Export FintechButton alias for backward compatibility
 export const FintechButton = Button;
-

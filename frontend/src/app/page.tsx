@@ -1,52 +1,49 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/navbar";
 import { TrustPassportCredential } from "@/components/passports/trust-passport-credential";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   Shield,
-  ShieldCheck,
+  FileCheck2,
+  Bot,
+  CreditCard,
+  ScrollText,
+  AlertOctagon,
   CheckCircle2,
   XCircle,
   ArrowRight,
   Sparkles,
   Lock,
-  Bot,
-  CreditCard,
-  ScrollText,
-  AlertOctagon,
+  UserCheck,
+  ShieldCheck,
+  ExternalLink,
   Layers,
-  Clock,
+  ChevronRight,
+  Zap,
   Play,
   Github,
-  ChevronRight,
-  TrendingUp,
-  FileCheck2,
-  UserCheck,
-  ExternalLink,
-  Cpu,
-  Fingerprint,
+  Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 
+// Static demo passport data for the centerpiece credential on landing page
 const DEMO_HERO_PASSPORT = {
-  id: "pass-giftcard-75",
+  id: "hero-demo-passport",
   passportNumber: "PASS-2026-8942-US",
-  status: "ISSUED",
+  status: "VALID",
   disputeReadinessScore: 98,
   passportHash: "92fe1516cccce243f341d4a8c20fb2d7e012354a8b7923485cba799ef0439201",
   issuedAt: "2026-11-02T18:30:00Z",
   authorizationData: JSON.stringify({
+    authorizer: "Jacob (Account Owner & Treasury Lead)",
     mandateId: "mandate-gift-card-demo",
-    title: "Client Appreciation Gift",
-    purpose: "Client appreciation gift for Q4 milestone delivery",
-    maxAmount: 80.0,
-    currency: "USD",
-    allowedCategories: "digital gift cards",
-    authorizer: "Human Business Owner (Jacob)",
-    approvedAt: "2026-11-02T18:28:00Z",
+    purpose: "Client appreciation gift",
+    authorizedAt: "2026-11-02T18:29:00Z",
     constraints: [
       "Per-transaction cap: $80.00 USD",
       "Category restriction: digital gift cards only",
@@ -98,10 +95,7 @@ const DEMO_HERO_PASSPORT = {
     amount: 75.0,
     currency: "USD",
     itemName: "Starbucks e-Gift Card",
-    recipient: "client@acmecorp.com",
-    paypalOrderId: "PAYPAL-ORD-8X92104M-SB",
-    paypalCaptureId: "CAPTURE-7TY90123L-SB",
-    status: "SETTLED",
+    merchantName: "Starbucks Select Network",
     disputes: [],
   },
 };
@@ -114,8 +108,10 @@ const DEMO_HERO_VERIFICATION = {
 };
 
 export default function LandingPage() {
+  const [activeAutopsyTab, setActiveAutopsyTab] = useState<"evidence" | "defense">("evidence");
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden w-full">
       <Navbar />
 
       {/* HERO SECTION — ASYMMETRIC EDITORIAL COMPOSITION */}
@@ -123,10 +119,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* Left Column: Institutional Pitch */}
-            <div className="lg:col-span-6 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              className="lg:col-span-6 space-y-6"
+            >
               {/* Telemetry pill */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-secondary border border-border text-xs font-medium text-foreground">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="font-semibold text-primary">
                   Financial Control Plane
                 </span>
@@ -183,21 +184,26 @@ export default function LandingPage() {
               <div className="pt-6 border-t border-border/80 grid grid-cols-3 gap-4 text-xs font-medium">
                 <div>
                   <div className="font-mono text-base font-bold text-foreground tabular-nums">100%</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Mandate-checked</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 font-mono">Mandate-checked</div>
                 </div>
                 <div>
                   <div className="font-mono text-base font-bold text-foreground tabular-nums">SHA-256</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Merkle audit chain</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 font-mono">Merkle audit chain</div>
                 </div>
                 <div>
                   <div className="font-mono text-base font-bold text-foreground tabular-nums">Human-in-Loop</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Co-signed defense</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 font-mono">Co-signed defense</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Column: Live Centerpiece Trust Passport Credential */}
-            <div className="lg:col-span-6 relative">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.23, 1, 0.32, 1] }}
+              className="lg:col-span-6 relative"
+            >
               <div className="text-center mb-2 lg:text-right">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-secondary px-2.5 py-1 rounded border border-border">
                   Live Interactive Financial Credential
@@ -207,13 +213,20 @@ export default function LandingPage() {
                 passport={DEMO_HERO_PASSPORT}
                 verification={DEMO_HERO_VERIFICATION}
               />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* SECTION 1: THE AGENT SPEND DILEMMA (COMPARISON LEDGER) */}
-      <section id="problem" className="py-20 md:py-24 bg-card border-b border-border">
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+        id="problem"
+        className="py-20 md:py-24 bg-card border-b border-border"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="max-w-3xl space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
@@ -318,10 +331,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* SECTION 2: PRODUCT ARCHITECTURE PIPELINE */}
-      <section id="architecture" className="py-20 md:py-24 bg-background border-b border-border">
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+        id="architecture"
+        className="py-20 md:py-24 bg-background border-b border-border"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="max-w-3xl space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary">
@@ -337,7 +357,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Step 1 */}
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative group hover:border-primary/50 transition-all">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-muted-foreground">01</span>
                 <span className="w-2 h-2 rounded-full bg-primary" />
@@ -352,7 +372,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 */}
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative group hover:border-emerald-500/50 transition-all">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-muted-foreground">02</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -367,7 +387,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 */}
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative group hover:border-primary/50 transition-all">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-muted-foreground">03</span>
                 <span className="w-2 h-2 rounded-full bg-primary" />
@@ -382,7 +402,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 4 */}
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 relative group hover:border-amber-500/50 transition-all">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-muted-foreground">04</span>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -397,10 +417,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* SECTION 3: FORENSIC DISPUTE AUTOPSY PREVIEW */}
-      <section id="autopsy" className="py-20 md:py-24 bg-card border-b border-border">
+      {/* SECTION 3: FORENSIC DISPUTE AUTOPSY INTERACTIVE PREVIEW */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+        id="autopsy"
+        className="py-20 md:py-24 bg-card border-b border-border"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="max-w-3xl space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
@@ -436,11 +463,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-900 dark:text-amber-300 leading-relaxed">
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-900 dark:text-amber-300 leading-relaxed font-sans">
                 <strong>Gemini Strategy:</strong> COMPELLING_EVIDENCE_DIGITAL_DELIVERY with Seller Protection intangible goods coverage.
               </div>
 
-              <div className="pt-2 text-xs text-muted-foreground flex items-center justify-between border-t border-border">
+              <div className="pt-2 text-xs text-muted-foreground flex items-center justify-between border-t border-border font-mono">
                 <span>Response Due: <strong className="text-foreground">6 Days Remaining</strong></span>
                 <span className="text-foreground font-semibold">Risk: Low (98/100)</span>
               </div>
@@ -463,7 +490,7 @@ export default function LandingPage() {
               </div>
 
               <div className="p-3.5 rounded-lg border border-border bg-background text-xs font-mono space-y-1">
-                <div className="text-[10px] text-muted-foreground uppercase">Attestation Signature</div>
+                <div className="text-[10px] text-muted-foreground uppercase font-mono">Attestation Signature</div>
                 <div className="text-emerald-600 dark:text-emerald-400 font-bold truncate">
                   CO-SIGNED BY: Jacob (Owner &amp; Compliance Lead)
                 </div>
@@ -471,10 +498,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* SECTION 4: INSTITUTIONAL SECURITY MODEL */}
-      <section id="security" className="py-20 md:py-24 bg-background border-b border-border">
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+        id="security"
+        className="py-20 md:py-24 bg-background border-b border-border"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="max-w-3xl space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary">
@@ -489,7 +523,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 hover:border-primary/40 transition-colors">
               <Lock className="w-4 h-4 text-primary" />
               <h4 className="font-bold text-foreground text-sm">Mandate Bounds</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -497,7 +531,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 hover:border-emerald-500/40 transition-colors">
               <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <h4 className="font-bold text-foreground text-sm">Merkle Audit Trail</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -505,7 +539,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 hover:border-amber-500/40 transition-colors">
               <UserCheck className="w-4 h-4 text-amber-500" />
               <h4 className="font-bold text-foreground text-sm">Human Approval</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -513,7 +547,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-lg border border-border bg-card space-y-2">
+            <div className="p-5 rounded-lg border border-border bg-card space-y-2 hover:border-primary/40 transition-colors">
               <ShieldCheck className="w-4 h-4 text-primary" />
               <h4 className="font-bold text-foreground text-sm">Webhook Verification</h4>
               <p className="text-muted-foreground leading-relaxed">
@@ -522,7 +556,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* FINAL CALL TO ACTION */}
       <section className="py-20 md:py-24 bg-card text-center relative overflow-hidden">

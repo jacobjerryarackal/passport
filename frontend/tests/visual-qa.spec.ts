@@ -38,18 +38,16 @@ test.describe("Passport Institutional Fintech Visual QA", () => {
         consoleErrors.push(err.message);
       });
 
-      // 1. Test standard desktop in dark mode (1440px)
+      // 1. Desktop Standard Dark Mode (1440×900)
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(route.path, { waitUntil: "networkidle" });
       await page.waitForTimeout(500);
 
-      // Verify no horizontal overflow on desktop
       const desktopOverflow = await page.evaluate(() => {
         return document.documentElement.scrollWidth > window.innerWidth + 2;
       });
       expect(desktopOverflow).toBe(false);
 
-      // Capture Dark Mode Screenshot
       await page.screenshot({
         path: path.join(
           process.cwd(),
@@ -60,7 +58,7 @@ test.describe("Passport Institutional Fintech Visual QA", () => {
         fullPage: true,
       });
 
-      // 2. Toggle to Light Mode and verify
+      // 2. Desktop Standard Light Mode (1440×900)
       await page.evaluate(() => {
         document.documentElement.classList.remove("dark");
         document.documentElement.classList.add("light");
@@ -77,13 +75,53 @@ test.describe("Passport Institutional Fintech Visual QA", () => {
         fullPage: true,
       });
 
-      // 3. Test responsive mobile viewport (390px)
-      await page.setViewportSize({ width: 390, height: 844 });
+      // Switch back to Dark for remaining viewports
       await page.evaluate(() => {
         document.documentElement.classList.remove("light");
         document.documentElement.classList.add("dark");
       });
-      await page.waitForTimeout(400);
+
+      // 3. Desktop Wide Dark Mode (1920×1080)
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await page.waitForTimeout(300);
+
+      const wideOverflow = await page.evaluate(() => {
+        return document.documentElement.scrollWidth > window.innerWidth + 2;
+      });
+      expect(wideOverflow).toBe(false);
+
+      await page.screenshot({
+        path: path.join(
+          process.cwd(),
+          "test-results",
+          "screenshots",
+          `${route.name}-dark-1920-wide.png`
+        ),
+        fullPage: true,
+      });
+
+      // 4. Tablet Dark Mode (768×1024)
+      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.waitForTimeout(300);
+
+      const tabletOverflow = await page.evaluate(() => {
+        return document.documentElement.scrollWidth > window.innerWidth + 2;
+      });
+      expect(tabletOverflow).toBe(false);
+
+      await page.screenshot({
+        path: path.join(
+          process.cwd(),
+          "test-results",
+          "screenshots",
+          `${route.name}-dark-768-tablet.png`
+        ),
+        fullPage: true,
+      });
+
+      // 5. Mobile Dark Mode (390×844)
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(300);
 
       const mobileMetrics = await page.evaluate(() => {
         return {
