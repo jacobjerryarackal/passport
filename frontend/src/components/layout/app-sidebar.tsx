@@ -18,23 +18,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Spend Mandates", href: "/mandates", icon: FileCheck2 },
   { name: "Agent Purchases", href: "/purchases", icon: Bot },
   { name: "Trust Passports", href: "/passports", icon: ScrollText },
-  { name: "Dispute Autopsy", href: "/disputes", icon: AlertOctagon, badge: "1 Active" },
+  { name: "Dispute Autopsy", href: "/disputes", icon: AlertOctagon, badge: "1 Urgent" },
   { name: "Evidence Timeline", href: "/evidence", icon: Layers },
-  { name: "Audit Log", href: "/audit", icon: History },
+  { name: "Audit Ledger", href: "/audit", icon: History },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const [resetting, setResetting] = useState(false);
 
-  const handleResetDemo = async () => {
-    if (confirm("Reset demo data to initial hackathon scenario?")) {
+  const handleResetSandbox = async () => {
+    if (confirm("Reset sandbox environment to clean baseline state?")) {
       setResetting(true);
       try {
         const res = await fetch("/api/demo/reset", { method: "POST" });
@@ -42,7 +43,7 @@ export function AppSidebar() {
           window.location.reload();
         }
       } catch (err) {
-        console.error("Failed to reset demo:", err);
+        console.error("Failed to reset sandbox:", err);
       } finally {
         setResetting(false);
       }
@@ -50,13 +51,13 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="w-60 border-r border-border bg-[#0C0C0F] dark:bg-[#09090B] flex flex-col justify-between h-screen sticky top-0 shrink-0">
-      <div className="p-3.5 space-y-5">
+    <aside className="w-60 border-r border-border bg-card flex flex-col justify-between h-screen sticky top-0 shrink-0">
+      <div className="p-3.5 space-y-4">
         {/* Brand */}
-        <div className="flex items-center justify-between pb-3 border-b border-border/80">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-[#0070BA] flex items-center justify-center text-white shadow-sm shadow-[#0070BA]/20">
-              <Shield className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground shadow-xs shadow-primary/25">
+              <Shield className="w-3.5 h-3.5" />
             </div>
             <div>
               <span className="font-bold tracking-tight text-xs text-foreground block">
@@ -67,23 +68,23 @@ export function AppSidebar() {
               </span>
             </div>
           </Link>
-          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-            Sandbox
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+            SANDBOX
           </span>
         </div>
 
-        {/* Guided Tour Banner */}
+        {/* Interactive Tour Action Banner */}
         <Link
           href="/demo"
-          className="flex items-center justify-between p-2 rounded-md bg-[#0070BA]/10 border border-[#0070BA]/25 hover:bg-[#0070BA]/15 transition-colors group"
+          className="flex items-center justify-between p-2 rounded-md bg-primary/10 border border-primary/25 hover:bg-primary/15 transition-colors group"
         >
           <div className="flex items-center gap-2">
-            <PlayCircle className="w-3.5 h-3.5 text-[#0070BA] dark:text-[#38BDF8]" />
-            <span className="text-xs font-semibold text-[#0070BA] dark:text-[#38BDF8]">
-              Guided Demo Tour
+            <PlayCircle className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold text-primary">
+              Guided Tour
             </span>
           </div>
-          <ChevronRight className="w-3 h-3 text-[#0070BA] dark:text-[#38BDF8] group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-3 h-3 text-primary group-hover:translate-x-0.5 transition-transform" />
         </Link>
 
         {/* Navigation */}
@@ -97,23 +98,23 @@ export function AppSidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  "flex items-center justify-between px-2.5 py-2 rounded-md text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-[#0070BA] text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surfaceSubtle"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <Icon className={cn("w-3.5 h-3.5", isActive ? "text-white" : "text-muted-foreground")} />
+                  <Icon className={cn("w-3.5 h-3.5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
                   <span
                     className={cn(
-                      "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold",
+                      "text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none",
                       isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                        ? "bg-white/25 text-white"
+                        : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25"
                     )}
                   >
                     {item.badge}
@@ -125,29 +126,32 @@ export function AppSidebar() {
         </nav>
       </div>
 
-      {/* Footer Controls */}
-      <div className="p-3.5 border-t border-border/80 space-y-2.5">
-        <div className="rounded p-2 bg-surfaceSubtle border border-border/80 text-[10px] space-y-1 font-mono">
+      {/* Footer Status Controls */}
+      <div className="p-3.5 border-t border-border space-y-2.5">
+        <div className="rounded p-2 bg-secondary/60 border border-border text-[10px] space-y-1 font-mono">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>PayPal Gateway</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-2.5 h-2.5" /> LIVE
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-2.5 h-2.5" /> READY
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
-            <span>Agent Toolkit</span>
-            <span className="text-primary-400 truncate max-w-[85px]">mcp.sandbox</span>
+            <span>Policy Engine</span>
+            <span className="text-foreground truncate max-w-[85px]">Gemini 1.5 Pro</span>
           </div>
         </div>
 
-        <button
-          onClick={handleResetDemo}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleResetSandbox}
           disabled={resetting}
-          className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded border border-border/80 bg-surfaceSubtle hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          loading={resetting}
+          leadingIcon={<RotateCcw className="w-3 h-3" />}
+          className="w-full text-[11px]"
         >
-          <RotateCcw className={cn("w-3 h-3", resetting && "animate-spin")} />
-          <span>{resetting ? "Resetting..." : "Reset Scenario Data"}</span>
-        </button>
+          Reset Sandbox State
+        </Button>
       </div>
     </aside>
   );

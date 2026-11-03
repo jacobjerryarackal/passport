@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AppHeader } from "@/components/layout/app-header";
-import { FintechButton } from "@/components/ui/fintech-button";
+import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
 import { HashInspector } from "@/components/ui/hash-inspector";
 import { StateBoundary } from "@/components/ui/state-boundary";
@@ -134,18 +134,20 @@ export default function EvidenceTimelinePage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={fetchEvidence}
-              className="p-2 rounded-lg border border-border bg-card hover:bg-zinc-800 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Refresh Ledger"
               title="Refresh Ledger"
             >
               <RefreshCw className="w-4 h-4" />
-            </button>
+            </Button>
 
-            <FintechButton variant="outline" size="sm" onClick={exportCSV}>
+            <Button variant="outline" size="sm" onClick={exportCSV}>
               <Download className="w-3.5 h-3.5" />
               Export RFC 4180 CSV
-            </FintechButton>
+            </Button>
           </div>
         </div>
 
@@ -153,7 +155,7 @@ export default function EvidenceTimelinePage() {
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-900/60 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+              <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3.5 px-4 font-mono">Artifact Title &amp; Description</th>
                   <th className="py-3.5 px-4 font-mono">Evidence Type</th>
@@ -182,7 +184,7 @@ export default function EvidenceTimelinePage() {
                   </tr>
                 ) : (
                   filtered.map((item) => (
-                    <tr key={item.id} className="hover:bg-zinc-900/40 transition-colors">
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-3.5 px-4 max-w-sm">
                         <div className="font-semibold text-foreground text-xs">
                           {item.title}
@@ -192,18 +194,18 @@ export default function EvidenceTimelinePage() {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-400">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-600 dark:text-primary-400">
                         {item.type}
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-zinc-300 border border-zinc-700/60">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted text-[10px] font-mono text-foreground border border-border">
                           {item.source === "PAYPAL_API" ? (
-                            <CreditCard className="w-3 h-3 text-primary-400" />
+                            <CreditCard className="w-3 h-3 text-primary-500" />
                           ) : item.source === "GEMINI_AGENT" ? (
-                            <Bot className="w-3 h-3 text-emerald-400" />
+                            <Bot className="w-3 h-3 text-emerald-500" />
                           ) : (
-                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
                           )}
                           {item.source}
                         </span>

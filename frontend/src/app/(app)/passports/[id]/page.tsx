@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/layout/app-header";
 import { TrustPassportCredential } from "@/components/passports/trust-passport-credential";
 import { StateBoundary } from "@/components/ui/state-boundary";
-import { FintechButton } from "@/components/ui/fintech-button";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
 export default function PassportDetailPage() {
@@ -51,19 +51,21 @@ export default function PassportDetailPage() {
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between">
           <Link href="/passports">
-            <FintechButton variant="outline" size="sm">
+            <Button variant="outline" size="sm">
               <ArrowLeft className="w-3.5 h-3.5" />
               All Passports
-            </FintechButton>
+            </Button>
           </Link>
 
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={fetchPassport}
-            className="p-2 rounded-lg border border-border bg-card hover:bg-zinc-800 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Refresh Credential"
             title="Refresh Credential"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
         </div>
 
         {loading ? (

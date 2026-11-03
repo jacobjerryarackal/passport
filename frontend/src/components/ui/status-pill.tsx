@@ -26,7 +26,7 @@ export function StatusPill({ status, label, className, showIcon = true }: Status
   const normalized = (status || "").toLowerCase().replace(/[\s-]/g, "_");
 
   let style = "bg-muted text-muted-foreground border-border";
-  let icon = <Clock className="w-3 h-3" />;
+  let icon = <Clock className="w-3 h-3 shrink-0" />;
   let text = label || status.replace(/_/g, " ");
 
   // 1. Success States (Emerald Only)
@@ -37,8 +37,8 @@ export function StatusPill({ status, label, className, showIcon = true }: Status
     normalized === "settled" ||
     normalized === "valid"
   ) {
-    style = "bg-emerald-500/10 text-emerald-400 border-emerald-500/25";
-    icon = <CheckCircle2 className="w-3 h-3 text-emerald-400" />;
+    style = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
+    icon = <CheckCircle2 className="w-3 h-3 shrink-0 text-emerald-600 dark:text-emerald-400" />;
     text = label || "Verified";
   }
   // 2. Pending / Human Co-Sign Required (Amber Only)
@@ -49,8 +49,8 @@ export function StatusPill({ status, label, className, showIcon = true }: Status
     normalized === "waiting_for_seller_response" ||
     normalized === "under_review"
   ) {
-    style = "bg-amber-500/10 text-amber-400 border-amber-500/30";
-    icon = <AlertTriangle className="w-3 h-3 text-amber-400" />;
+    style = "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/35";
+    icon = <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600 dark:text-amber-400" />;
     text = label || (normalized === "action_required" ? "Action Required" : "Co-Signed");
   }
   // 3. Blocked / Dispute / Risk (Crimson Only)
@@ -61,21 +61,21 @@ export function StatusPill({ status, label, className, showIcon = true }: Status
     normalized === "chargeback" ||
     normalized === "revoked"
   ) {
-    style = "bg-rose-500/10 text-rose-400 border-rose-500/25";
-    icon = <XCircle className="w-3 h-3 text-rose-400" />;
+    style = "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30";
+    icon = <XCircle className="w-3 h-3 shrink-0 text-rose-600 dark:text-rose-400" />;
     text = label || (normalized === "blocked" ? "Blocked" : "Disputed");
   }
   // 4. Active / Neutral System State
   else if (normalized === "active") {
-    style = "bg-primary-500/10 text-primary-400 border-primary-500/25";
-    icon = <ShieldCheck className="w-3 h-3 text-primary-400" />;
+    style = "bg-primary/10 text-primary-700 dark:text-primary-300 border-primary/30";
+    icon = <ShieldCheck className="w-3 h-3 shrink-0 text-primary" />;
     text = label || "Active";
   }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold tracking-wide border",
+        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold tracking-wide border leading-none select-none",
         style,
         className
       )}
@@ -85,4 +85,3 @@ export function StatusPill({ status, label, className, showIcon = true }: Status
     </span>
   );
 }
-

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AppHeader } from "@/components/layout/app-header";
-import { FintechButton } from "@/components/ui/fintech-button";
+import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
 import { HashInspector } from "@/components/ui/hash-inspector";
 import { StateBoundary } from "@/components/ui/state-boundary";
@@ -76,7 +76,7 @@ export default function AuditLogPage() {
         {/* Verification Status Banner */}
         <div className="fintech-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-emerald-500/25 bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -95,10 +95,10 @@ export default function AuditLogPage() {
             </div>
           </div>
 
-          <FintechButton variant="outline" size="sm" onClick={fetchLogs}>
+          <Button variant="outline" size="sm" onClick={fetchLogs}>
             <RefreshCw className="w-3.5 h-3.5" />
             Verify Chain
-          </FintechButton>
+          </Button>
         </div>
 
         {/* Search */}
@@ -117,7 +117,7 @@ export default function AuditLogPage() {
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-900/60 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+              <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3.5 px-4 font-mono">Action &amp; Actor</th>
                   <th className="py-3.5 px-4 font-mono">Model / Agent Component</th>
@@ -145,30 +145,30 @@ export default function AuditLogPage() {
                   </tr>
                 ) : (
                   filteredLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-zinc-900/40 transition-colors">
+                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-mono font-bold text-foreground text-xs">
                           {log.action}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Actor: <strong className="text-zinc-300">{log.actor}</strong>
+                          Actor: <strong className="text-foreground">{log.actor}</strong>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-400">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-primary-600 dark:text-primary-400">
                         {log.actorModel || "system-guard"}
                       </td>
 
-                      <td className="py-3.5 px-4 max-w-xs truncate text-[11px] text-zinc-300">
+                      <td className="py-3.5 px-4 max-w-xs truncate text-[11px] text-foreground/80">
                         {log.details}
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-[10px]">
                         <div className="flex items-center gap-2">
-                          <span className="text-zinc-500">
+                          <span className="text-muted-foreground">
                             {truncateHash(log.parentHash || "ROOT", 5, 4)}
                           </span>
-                          <span className="text-zinc-600">&rarr;</span>
+                          <span className="text-muted-foreground">&rarr;</span>
                           <HashInspector hash={log.eventHash} truncateLength={5} />
                         </div>
                       </td>

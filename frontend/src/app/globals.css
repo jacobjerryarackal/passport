@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%; /* #F8FAFC */
-    --foreground: 222 47% 11%; /* #09090B */
+    --background: 210 20% 98%; /* #F8FAFC Slate Canvas */
+    --foreground: 240 10% 4%;   /* #09090B Dark Obsidian text */
 
-    --card: 0 0% 100%; /* #FFFFFF */
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;          /* #FFFFFF Pure White Surface */
+    --card-foreground: 240 10% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 240 10% 4%;
 
-    --primary: 204 100% 36%; /* PayPal Blue #0070BA */
+    --primary: 204 100% 36%;    /* PayPal Blue #0070BA */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 95%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 240 10% 4%;
 
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 240 4% 46%; /* #71717A */
 
     --accent: 204 100% 96%;
     --accent-foreground: 204 100% 36%;
@@ -28,43 +28,43 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%; /* #E2E8F0 */
-    --input: 214 32% 91%;
+    --border: 214 20% 88%;      /* Crisp, subtle dividing hairline */
+    --input: 214 20% 88%;
     --ring: 204 100% 36%;
 
-    --radius: 0.625rem; /* 10px */
+    --radius: 0.5rem; /* 8px default */
   }
 
   .dark {
-    --background: 240 10% 4%; /* #09090B Obsidian Zinc */
-    --foreground: 0 0% 98%;   /* #FAFAFA */
+    --background: 240 10% 4%;   /* #09090B Obsidian Base */
+    --foreground: 0 0% 98%;     /* #FAFAFA Warm-white primary text */
 
-    --card: 240 7% 7%;        /* #121215 Raised Card */
+    --card: 240 6% 7%;          /* #111114 Raised card surface */
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 8% 10%;    /* #18181C Elevated */
+    --popover: 240 7% 10%;      /* #18181C Elevated popover */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 204 100% 42%;  /* #0070BA Core PayPal Blue */
+    --primary: 204 100% 42%;    /* #0070BA Brand Blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 12%;  /* #1F1F24 */
+    --secondary: 240 5% 12%;    /* #1E1E22 */
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 240 6% 14%;      /* #27272A */
+    --muted: 240 5% 14%;        /* #242428 */
     --muted-foreground: 240 5% 65%; /* #A1A1AA */
 
     --accent: 204 100% 12%;
     --accent-foreground: 204 100% 70%;
 
-    --destructive: 0 84% 60%; /* #EF4444 Crimson */
+    --destructive: 0 84% 60%;   /* #EF4444 Crimson */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 16%;     /* #27272A Hairline */
-    --input: 240 6% 16%;
+    --border: 240 5% 16%;       /* #27272A 1px Hairline */
+    --input: 240 5% 16%;
     --ring: 204 100% 42%;
 
-    --radius: 0.625rem; /* 10px */
+    --radius: 0.5rem; /* 8px default */
   }
 }
 
@@ -74,9 +74,14 @@
   }
   body {
     @apply bg-background text-foreground transition-colors duration-150 antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
   }
-  
+
+  ::selection {
+    background-color: rgba(0, 112, 186, 0.25);
+    color: inherit;
+  }
+
   /* Tabular numbers for financial data */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
@@ -84,39 +89,43 @@
 }
 
 /* Institutional Card Design */
-.fintech-surface {
+.fintech-card {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.fintech-surface:hover {
+.fintech-card:hover {
   border-color: rgba(0, 112, 186, 0.4);
 }
 
-/* Cryptographic Security Micro-Border Pattern */
+/* Cryptographic Credential Styling */
 .credential-border {
   border: 1px solid rgba(0, 112, 186, 0.35);
   box-shadow: 0 0 0 1px rgba(0, 112, 186, 0.1), 0 8px 30px -4px rgba(0, 0, 0, 0.6);
 }
 
-/* Restrained grid background texture */
-.fintech-grid-subtle {
-  background-size: 24px 24px;
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+.credential-watermark {
+  background-image: radial-gradient(circle at 50% 50%, rgba(0, 112, 186, 0.04) 0%, transparent 60%);
 }
 
-.light .fintech-grid-subtle {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+/* Structural Subtle Grid */
+.fintech-grid {
+  background-size: 32px 32px;
+  background-image: linear-gradient(to right, rgba(120, 120, 120, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 120, 120, 0.06) 1px, transparent 1px);
+}
+
+.dark .fintech-grid {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
 /* Custom Scrollbar for dense ledgers */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -127,4 +136,23 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
+}
+
+/* Verification Scan Line Animation */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(1000%);
+    opacity: 0;
+  }
+}
+
+.animate-scanline {
+  animation: scanline 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

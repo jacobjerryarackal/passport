@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppHeader } from "@/components/layout/app-header";
-import { FintechButton } from "@/components/ui/fintech-button";
+import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
 import { HashInspector } from "@/components/ui/hash-inspector";
 import {
@@ -20,6 +20,10 @@ import {
   Lock,
   Layers,
   ScrollText,
+  SlidersHorizontal,
+  ChevronRight,
+  BadgeAlert,
+  Send,
 } from "lucide-react";
 import { formatCurrency, truncateHash } from "@/lib/utils";
 import confetti from "canvas-confetti";
@@ -161,7 +165,7 @@ export default function PurchasesPage() {
           <div className="space-y-1">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 font-mono">
               <Lock className="w-3.5 h-3.5 text-primary-400" />
-              Active Governing Mandate
+              Active Governing Spend Mandate
             </span>
             <div className="flex items-center gap-3">
               <select
@@ -171,7 +175,7 @@ export default function PurchasesPage() {
                   setCurrentProposal(null);
                   setExecutionResult(null);
                 }}
-                className="bg-background border border-border rounded-lg text-xs font-semibold py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="bg-background border border-border rounded-lg text-xs font-semibold py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary-500 text-foreground"
               >
                 {mandates.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -180,7 +184,7 @@ export default function PurchasesPage() {
                 ))}
               </select>
               {selectedMandate && (
-                <span className="font-mono text-xs font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
+                <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
                   Cap: ${selectedMandate.maxAmount.toFixed(2)}
                 </span>
               )}
@@ -190,7 +194,7 @@ export default function PurchasesPage() {
           {selectedMandate && (
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <div>
-                Allowed Category:{" "}
+                Authorized Category:{" "}
                 <span className="font-mono text-foreground font-semibold">
                   {selectedMandate.allowedCategories.replace(/[\[\]"]/g, "")}
                 </span>
@@ -199,9 +203,9 @@ export default function PurchasesPage() {
           )}
         </div>
 
-        {/* Preset Scenarios Selector (Exact Hackathon Vertical Showcase) */}
+        {/* Requisition Scenario Cockpit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Preset A: Approved $75 Gift Card */}
+          {/* Preset A: Authorized Micro-Requisition */}
           <div
             onClick={() => {
               setSelectedPreset("approved");
@@ -214,25 +218,35 @@ export default function PurchasesPage() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Scenario A: Authorized Proposal
-                </h3>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Scenario A: Compliant Requisition
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    Autonomous Gift Card Procurement
+                  </span>
+                </div>
               </div>
-              <StatusPill status="approved" label="WILL APPROVE" />
+              <StatusPill status="approved" label="POLICY COMPLIANT" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
               Agent proposes a <strong className="text-foreground">$75 Digital Gift Card</strong> (Starbucks Select). Well within $80 cap, matching authorized &quot;digital gift cards&quot; category.
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-              <Zap className="w-3.5 h-3.5" /> Test Approved Flow
+            <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/40">
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5" /> Execute Compliant Flow
+              </span>
+              <span className="font-mono text-xs font-bold text-foreground tabular-nums">
+                $75.00 USD
+              </span>
             </div>
           </div>
 
-          {/* Preset B: Blocked $120 Physical Chair */}
+          {/* Preset B: Non-Compliant Capital Requisition */}
           <div
             onClick={() => {
               setSelectedPreset("blocked");
@@ -245,21 +259,31 @@ export default function PurchasesPage() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
                   <XCircle className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  Scenario B: Policy-Violating Proposal
-                </h3>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Scenario B: Non-Compliant Requisition
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    Out-of-Scope Hardware Purchase
+                  </span>
+                </div>
               </div>
-              <StatusPill status="blocked" label="WILL BLOCK" />
+              <StatusPill status="blocked" label="POLICY BREACH" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
               Agent proposes a <strong className="text-foreground">$120 Ergonomic Chair</strong>. Exceeds $80 limit ($120 &gt; $80) AND category &quot;physical equipment&quot; is outside authorization.
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-rose-400">
-              <AlertTriangle className="w-3.5 h-3.5" /> Test Blocked Flow
+            <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/40">
+              <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" /> Inspect Blocked Enforcement
+              </span>
+              <span className="font-mono text-xs font-bold text-rose-500 tabular-nums">
+                $120.00 USD
+              </span>
             </div>
           </div>
         </div>
@@ -267,9 +291,9 @@ export default function PurchasesPage() {
         {/* Live Proposal & Policy Inspector */}
         {proposing && (
           <div className="fintech-card text-center py-12 space-y-3">
-            <Bot className="w-8 h-8 text-primary-400 mx-auto animate-bounce" />
+            <Bot className="w-8 h-8 text-primary-500 dark:text-primary-400 mx-auto animate-bounce" />
             <h4 className="text-sm font-semibold text-foreground">
-              Agent Reasoning in Progress...
+              Agent Policy Evaluation Engine Active...
             </h4>
             <p className="text-xs text-muted-foreground">
               Evaluating purchase options against mandate parameters with Google Gemini 1.5 Pro...
@@ -292,8 +316,8 @@ export default function PurchasesPage() {
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                       currentProposal.validationStatus === "APPROVED"
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-rose-500/10 text-rose-400"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                     }`}
                   >
                     {currentProposal.validationStatus === "APPROVED" ? (
@@ -311,7 +335,7 @@ export default function PurchasesPage() {
                       />
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Recipient: <strong className="text-foreground">{currentProposal.recipient}</strong> · Category: <span className="font-mono text-primary-400">{currentProposal.itemCategory}</span>
+                      Recipient: <strong className="text-foreground">{currentProposal.recipient}</strong> · Category: <span className="font-mono text-primary-500 dark:text-primary-400">{currentProposal.itemCategory}</span>
                     </p>
                   </div>
                 </div>
@@ -327,11 +351,11 @@ export default function PurchasesPage() {
               </div>
 
               {/* Agent Chain of Thought */}
-              <div className="mt-4 p-3.5 rounded-lg bg-zinc-900 border border-border text-xs space-y-1">
+              <div className="mt-4 p-3.5 rounded-lg bg-muted/40 border border-border text-xs space-y-1">
                 <span className="text-[10px] uppercase font-mono font-bold text-muted-foreground tracking-wider block">
                   Agent Chain of Thought &amp; Selection Rationale
                 </span>
-                <p className="text-zinc-300 leading-relaxed italic">
+                <p className="text-foreground/90 leading-relaxed italic">
                   &quot;{currentProposal.reasoning}&quot;
                 </p>
               </div>
@@ -347,19 +371,19 @@ export default function PurchasesPage() {
                   <div
                     className={`p-3 rounded-lg border text-xs ${
                       parsedChecks?.amountCheck?.passed
-                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-300"
-                        : "border-rose-500/25 bg-rose-500/5 text-rose-300"
+                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-800 dark:text-emerald-300"
+                        : "border-rose-500/25 bg-rose-500/5 text-rose-800 dark:text-rose-300"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold mb-1">
                       {parsedChecks?.amountCheck?.passed ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" />
                       )}
                       1. Budget Cap Check
                     </div>
-                    <div className="text-[11px] opacity-90">
+                    <div className="text-[11px] opacity-90 font-mono">
                       {parsedChecks?.amountCheck?.message || "Amount constraint verified"}
                     </div>
                   </div>
@@ -368,19 +392,19 @@ export default function PurchasesPage() {
                   <div
                     className={`p-3 rounded-lg border text-xs ${
                       parsedChecks?.categoryCheck?.passed
-                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-300"
-                        : "border-rose-500/25 bg-rose-500/5 text-rose-300"
+                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-800 dark:text-emerald-300"
+                        : "border-rose-500/25 bg-rose-500/5 text-rose-800 dark:text-rose-300"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold mb-1">
                       {parsedChecks?.categoryCheck?.passed ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" />
                       )}
                       2. Category Check
                     </div>
-                    <div className="text-[11px] opacity-90">
+                    <div className="text-[11px] opacity-90 font-mono">
                       {parsedChecks?.categoryCheck?.message || "Category constraint verified"}
                     </div>
                   </div>
@@ -389,19 +413,19 @@ export default function PurchasesPage() {
                   <div
                     className={`p-3 rounded-lg border text-xs ${
                       parsedChecks?.expiryCheck?.passed
-                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-300"
-                        : "border-rose-500/25 bg-rose-500/5 text-rose-300"
+                        ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-800 dark:text-emerald-300"
+                        : "border-rose-500/25 bg-rose-500/5 text-rose-800 dark:text-rose-300"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold mb-1">
                       {parsedChecks?.expiryCheck?.passed ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" />
                       )}
                       3. Expiry Check
                     </div>
-                    <div className="text-[11px] opacity-90">
+                    <div className="text-[11px] opacity-90 font-mono">
                       {parsedChecks?.expiryCheck?.message || "Mandate active and within time boundary"}
                     </div>
                   </div>
@@ -413,11 +437,11 @@ export default function PurchasesPage() {
                 {currentProposal.validationStatus === "APPROVED" ? (
                   <>
                     <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
                       <span>Ready for instant PayPal Sandbox order creation &amp; capture.</span>
                     </div>
 
-                    <FintechButton
+                    <Button
                       variant="primary"
                       size="md"
                       onClick={handleExecutePayPal}
@@ -429,11 +453,11 @@ export default function PurchasesPage() {
                         : executionResult
                         ? "Settled & Issued!"
                         : `Execute via PayPal ($${currentProposal.amount.toFixed(2)})`}
-                    </FintechButton>
+                    </Button>
                   </>
                 ) : (
-                  <div className="w-full p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center gap-2">
-                    <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <div className="w-full p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                    <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
                     <span>
                       <strong>Execution Blocked:</strong> {currentProposal.violationReason}
                     </span>
@@ -445,7 +469,7 @@ export default function PurchasesPage() {
             {/* Execution Result Banner (Trust Passport Created) */}
             {executionResult && (
               <div className="p-6 rounded-xl border border-emerald-500/40 bg-emerald-500/5 shadow-lg space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
                       <ScrollText className="w-4 h-4" />
@@ -461,24 +485,24 @@ export default function PurchasesPage() {
                   </div>
 
                   <Link href={`/passports/${executionResult.passport?.id}`}>
-                    <FintechButton variant="primary" size="sm">
-                      <span>View Trust Passport</span>
+                    <Button variant="primary" size="sm">
+                      <span>Inspect Credential</span>
                       <ArrowRight className="w-3.5 h-3.5" />
-                    </FintechButton>
+                    </Button>
                   </Link>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-border/60">
                   <div>
-                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold font-mono">
                       Seller Protection
                     </span>
-                    <span className="text-emerald-400 font-bold font-mono">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">
                       ELIGIBLE
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold font-mono">
                       Dispute Readiness
                     </span>
                     <span className="text-foreground font-bold font-mono tabular-nums">
@@ -486,13 +510,13 @@ export default function PurchasesPage() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold font-mono">
                       Cryptographic Hash
                     </span>
                     <HashInspector hash={executionResult.passport?.passportHash} truncateLength={6} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold font-mono">
                       Audit Trail
                     </span>
                     <span className="text-foreground font-medium font-mono text-[11px]">
