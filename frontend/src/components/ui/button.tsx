@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "icon-only";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "icon";
   loading?: boolean;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
@@ -62,16 +62,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     // Strict dimensions: height, horizontal padding, and icon gap
-    const sizeClasses = isIconOnly
+    const effectiveIsIcon = isIconOnly || size === "icon";
+    const sizeClasses = effectiveIsIcon
       ? {
           sm: "h-8 w-8 p-0 rounded-md",
           md: "h-9 w-9 p-0 rounded-md",
           lg: "h-11 w-11 p-0 rounded-md",
+          icon: "h-8 w-8 p-0 rounded-md",
         }
       : {
           sm: "h-8 px-3 text-xs gap-1.5 rounded-md",
           md: "h-9 px-3.5 text-xs font-semibold gap-2 rounded-md",
           lg: "h-11 px-5 text-sm font-semibold gap-2.5 rounded-lg",
+          icon: "h-8 w-8 p-0 rounded-md",
         };
 
     // Icon sizing constraints: strictly flex-shrink-0 and aligned

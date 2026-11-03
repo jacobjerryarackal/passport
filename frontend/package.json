@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:seed": "ts-node prisma/seed.ts",
     "test:poc": "ts-node -r tsconfig-paths/register src/tests/milestone1.ts",
+    "test:visual": "playwright test",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

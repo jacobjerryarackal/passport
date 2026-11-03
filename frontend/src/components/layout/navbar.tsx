@@ -18,7 +18,7 @@ export function Navbar() {
             <span className="font-bold tracking-tight text-sm text-foreground">
               Passport
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border hidden sm:inline-block">
               Trust Infrastructure
             </span>
           </div>
@@ -44,7 +44,7 @@ export function Navbar() {
         </nav>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
 
           <a
@@ -69,11 +69,11 @@ export function Navbar() {
               size="sm"
               leadingIcon={<Play className="w-3 h-3 fill-current text-primary" />}
             >
-              Live Demo
+              Demo
             </Button>
           </Link>
 
-          <Link href="/dashboard" tabIndex={-1}>
+          <Link href="/dashboard" tabIndex={-1} className="hidden sm:inline-flex">
             <Button
               variant="primary"
               size="sm"

@@ -72,9 +72,15 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   body {
     @apply bg-background text-foreground transition-colors duration-150 antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   ::selection {

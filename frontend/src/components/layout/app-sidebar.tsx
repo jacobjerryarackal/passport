@@ -51,7 +51,7 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="w-60 border-r border-border bg-card flex flex-col justify-between h-screen sticky top-0 shrink-0">
+    <aside className="hidden md:flex w-60 border-r border-border bg-card flex-col justify-between h-screen sticky top-0 shrink-0">
       <div className="p-3.5 space-y-4">
         {/* Brand */}
         <div className="flex items-center justify-between pb-3 border-b border-border">

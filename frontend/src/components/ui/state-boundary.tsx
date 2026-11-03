@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { AlertTriangle, XCircle, Inbox, RefreshCw, CheckCircle2 } from "lucide-react";
 import { FintechButton } from "./fintech-button";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ interface StateBoundaryProps {
   message?: string;
   actionLabel?: string;
   onAction?: () => void;
+  actionHref?: string;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export function StateBoundary({
   message,
   actionLabel,
   onAction,
+  actionHref,
   className,
 }: StateBoundaryProps) {
   const displayDesc = description || message;
@@ -63,15 +66,26 @@ export function StateBoundary({
         {displayDesc && <p className="text-xs text-muted-foreground leading-relaxed">{displayDesc}</p>}
       </div>
 
-      {actionLabel && onAction && (
+      {actionLabel && (
         <div className="pt-2">
-          <FintechButton
-            variant={type === "blocked" ? "danger" : "primary"}
-            size="sm"
-            onClick={onAction}
-          >
-            {actionLabel}
-          </FintechButton>
+          {actionHref ? (
+            <Link href={actionHref}>
+              <FintechButton
+                variant={type === "blocked" ? "danger" : "primary"}
+                size="sm"
+              >
+                {actionLabel}
+              </FintechButton>
+            </Link>
+          ) : onAction ? (
+            <FintechButton
+              variant={type === "blocked" ? "danger" : "primary"}
+              size="sm"
+              onClick={onAction}
+            >
+              {actionLabel}
+            </FintechButton>
+          ) : null}
         </div>
       )}
     </div>

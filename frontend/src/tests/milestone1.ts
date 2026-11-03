@@ -140,7 +140,7 @@ async function runMilestone1ProofOfConcept() {
 
   // Step 6: Generate Trust Passport
   console.log("\n👉 Step 6: Generating Trust Passport...");
-  const passportNumber = `PASS-${new Date().getFullYear()}-POC-01`;
+  const passportNumber = `PASS-${new Date().getFullYear()}-POC-${Date.now().toString().slice(-6)}`;
   const passportHash = generatePassportHash({
     mandateId: mandate.id,
     purchaseId: purchase.id,

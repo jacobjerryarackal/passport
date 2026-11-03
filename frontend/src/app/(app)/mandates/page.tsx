@@ -340,8 +340,7 @@ export default function MandatesPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  variant="icon-only"
+                  size="icon"
                   onClick={() => setShowCreateModal(false)}
                   ariaLabel="Close modal"
                 >
