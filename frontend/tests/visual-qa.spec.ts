@@ -37,6 +37,11 @@ test.describe("Passport Institutional Fintech Visual QA", () => {
       page.on("pageerror", (err) => {
         consoleErrors.push(err.message);
       });
+      page.on("response", (res) => {
+        if (res.status() >= 500) {
+          console.error(`[HTTP ${res.status()}] ${res.url()}`);
+        }
+      });
 
       // 1. Desktop Standard Dark Mode (1440×900)
       await page.setViewportSize({ width: 1440, height: 900 });
