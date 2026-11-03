@@ -154,6 +154,29 @@ test.describe("Passport Institutional Fintech Visual QA", () => {
         fullPage: false,
       });
 
+      // 6. Mobile Light Mode (390×844)
+      await page.evaluate(() => {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+      });
+      await page.waitForTimeout(300);
+
+      await page.screenshot({
+        path: path.join(
+          process.cwd(),
+          "test-results",
+          "screenshots",
+          `${route.name}-light-390-mobile.png`
+        ),
+        fullPage: false,
+      });
+
+      // Switch back to Dark
+      await page.evaluate(() => {
+        document.documentElement.classList.remove("light");
+        document.documentElement.classList.add("dark");
+      });
+
       // Assert zero console errors
       expect(consoleErrors).toEqual([]);
     });
