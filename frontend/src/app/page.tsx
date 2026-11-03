@@ -1,764 +1,495 @@
 "use client";
 
-import React, { useRef } from "react";
+import React from "react";
 import Link from "next/link";
-import { motion, useInView, Variants } from "framer-motion";
-import { Navbar } from "@/components/layout/navbar";
-import { TrustPassportCredential } from "@/components/passports/trust-passport-credential";
-import { Button } from "@/components/ui/button";
-import {
-  Shield,
-  FileCheck2,
-  Bot,
-  CreditCard,
-  ScrollText,
-  AlertOctagon,
-  CheckCircle2,
-  XCircle,
-  ArrowRight,
-  Lock,
-  UserCheck,
-  ShieldCheck,
-  ExternalLink,
-  ChevronRight,
-  Play,
-  Terminal,
-  Activity,
-  Check,
-} from "lucide-react";
-
-// Static demo passport data for the centerpiece credential on landing page
-const DEMO_HERO_PASSPORT = {
-  id: "hero-demo-passport",
-  passportNumber: "PASS-2026-8942-US",
-  status: "VALID",
-  disputeReadinessScore: 98,
-  passportHash: "92fe1516cccce243f341d4a8c20fb2d7e012354a8b7923485cba799ef0439201",
-  issuedAt: "2026-11-02T18:30:00Z",
-  authorizationData: JSON.stringify({
-    authorizer: "Jacob (Account Owner & Treasury Lead)",
-    mandateId: "mandate-gift-card-demo",
-    purpose: "Client appreciation gift",
-    authorizedAt: "2026-11-02T18:29:00Z",
-    constraints: [
-      "Per-transaction cap: $80.00 USD",
-      "Category restriction: digital gift cards only",
-      "Time-to-live: 24 hours strictly enforced",
-      "Refund policy: Full dispute defense enabled",
-    ],
-  }),
-  transactionData: JSON.stringify({
-    paypalOrderId: "PAYPAL-ORD-8X92104M-SB",
-    paypalCaptureId: "CAPTURE-7TY90123L-SB",
-    sellerProtection: "ELIGIBLE",
-    payerEmail: "sb-buyer-8491@business.example.com",
-    payeeEmail: "merchant-sandbox@passport.ai",
-    captureTime: "2026-11-02T18:29:45Z",
-    grossAmount: "$75.00 USD",
-    paypalFee: "$2.48 USD",
-    netAmount: "$72.52 USD",
-  }),
-  agentTrailData: JSON.stringify({
-    agentModel: "Google Gemini 1.5 Pro (Autonomous Purchase Engine)",
-    reasoning:
-      "Evaluated options against Mandate purpose ('Client appreciation gift'). Selected $75 digital gift card leaving $5.00 buffer under $80 cap. Item strictly belongs to authorized category 'digital gift cards'.",
-    selectedItem: "Starbucks Digital e-Gift Card ($75)",
-    itemPrice: 75.0,
-    budgetRemaining: 5.0,
-    executionTraceId: "gemini-exec-490218-trace",
-  }),
-  refundEligibility: JSON.stringify({
-    eligible: true,
-    reason: "Standard 30-day merchant warranty & PayPal Seller Protection applied",
-  }),
-  evidencePack: JSON.stringify([
-    "Human Mandate Cryptographic Token (SHA-256)",
-    "Autonomous Agent Intent Transcript (Gemini 1.5 Pro)",
-    "PayPal Sandbox Orders v2 Capture Attestation",
-    "Merchant Electronic Delivery Proof & Voucher Code",
-    "Digital Delivery Certificate (ECDSA-P256)",
-  ]),
-  mandate: {
-    id: "mandate-gift-card-demo",
-    title: "Client Appreciation Gift",
-    purpose: "Client appreciation gift",
-    maxAmount: 80.0,
-    currency: "USD",
-    allowedCategories: "digital gift cards",
-  },
-  purchase: {
-    id: "purch-75-starbucks",
-    amount: 75.0,
-    currency: "USD",
-    itemName: "Starbucks e-Gift Card",
-    merchantName: "Starbucks Select Network",
-    disputes: [],
-  },
-};
-
-const DEMO_HERO_VERIFICATION = {
-  isSignatureValid: true,
-  hash: "92fe1516cccce243f341d4a8c20fb2d7e012354a8b7923485cba799ef0439201",
-  algorithm: "ECDSA-P256-SHA256",
-  verifiedAt: "2026-11-02T18:30:00Z",
-};
-
-// Reusable scroll-reveal section container with spring physics
-function ScrollSection({
-  children,
-  className = "",
-  id = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <motion.section
-      ref={ref}
-      id={id}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.12,
-            delayChildren: 0.05,
-          },
-        },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.section>
-  );
-}
-
-const springChild: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: "spring" as const,
-      stiffness: 320,
-      damping: 32,
-    },
-  },
-};
+import { motion } from "framer-motion";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden w-full">
-      <Navbar />
-
-      {/* HERO SECTION — LEFT-ALIGNED EDITORIAL HERO WITH FLOATING TILTED CREDENTIAL */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 border-b border-border">
-        {/* Subtle animated grid and line-scan background (CSS masks, zero image assets) */}
-        <div className="forensic-masked-grid" aria-hidden="true" />
-        <div className="forensic-scan-line" aria-hidden="true" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-            {/* Left-Aligned Editorial Hero Column */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.08,
-                    delayChildren: 0.04,
-                  },
-                },
-              }}
-              className="lg:col-span-6 space-y-6 text-left"
+    <div className="min-h-screen bg-[#F7F5F2] text-[#0A1F33] font-sans selection:bg-[#0070BA]/15 selection:text-[#0A1F33] w-full overflow-x-hidden">
+      {/* EDITORIAL TOP BAR */}
+      <header className="border-b border-[#0A1F33]/[0.12] bg-[#F7F5F2]/90 backdrop-blur-xs sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-16 flex items-center justify-between">
+          <div className="flex items-baseline gap-3">
+            <Link
+              href="/"
+              className="font-serif text-xl tracking-tight text-[#0A1F33] font-normal hover:opacity-80 transition-opacity"
             >
-              {/* Telemetry metadata tag */}
-              <motion.div variants={springChild} className="inline-flex">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-secondary/80 border border-border text-xs font-medium text-foreground">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-semibold text-primary">Financial Control Plane</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-muted-foreground font-mono text-[11px]">
-                    PayPal Orders v2 · Forensics
+              Passport
+            </Link>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-[#4A5B6B] hidden sm:inline-block">
+              Attestation &amp; Dispute Ledger
+            </span>
+          </div>
+
+          <nav className="flex items-center gap-6 sm:gap-8 text-xs font-medium text-[#4A5B6B]">
+            <a href="#problem" className="hover:text-[#0A1F33] transition-colors hidden md:inline">
+              Exhibit 01 · Problem
+            </a>
+            <a href="#pipeline" className="hover:text-[#0A1F33] transition-colors hidden md:inline">
+              Exhibit 02 · Pipeline
+            </a>
+            <a href="#dispute" className="hover:text-[#0A1F33] transition-colors hidden md:inline">
+              Exhibit 03 · Defense
+            </a>
+            <Link href="/demo">
+              <span className="inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-medium text-white bg-[#0070BA] hover:bg-[#005596] rounded transition-colors active:scale-[0.98]">
+                Launch Demo
+              </span>
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* 1. EDITORIAL HERO (NO CARD) */}
+      <section className="pt-16 pb-20 md:pt-24 md:pb-28">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-start">
+            {/* Left Zone: Headline, Subhead, CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="lg:col-span-7 space-y-8"
+            >
+              {/* Display Serif Headline in 2 lines, max-width 780px, deep navy ink */}
+              <h1 className="font-serif font-normal text-4xl sm:text-5xl lg:text-[62px] text-[#0A1F33] leading-[1.05] tracking-[-0.03em] max-w-[780px]">
+                AI agents can spend money.
+                <br />
+                Passport makes every purchase accountable.
+              </h1>
+
+              {/* Single subhead in 62ch */}
+              <p className="text-[17px] sm:text-[18px] text-[#4A5B6B] leading-[1.6] max-w-[62ch]">
+                The pre-spend policy gate, cryptographic attestation chain, and automated dispute defense
+                layer for autonomous commerce.
+              </p>
+
+              {/* Two CTAs: One solid PayPal-blue button and one text link with an arrow */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pt-1">
+                <Link href="/demo">
+                  <span className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-[#0070BA] hover:bg-[#005596] rounded transition-colors active:scale-[0.98]">
+                    Launch interactive demo
                   </span>
-                </div>
-              </motion.div>
-
-              {/* Large, tight-tracking display headline (max-width ~680px) */}
-              <motion.h1
-                variants={springChild}
-                className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-[-0.035em] text-foreground leading-[1.06] max-w-[680px]"
-              >
-                AI agents can spend money.{" "}
-                <span className="text-primary block mt-1.5">
-                  Passport makes every purchase accountable.
-                </span>
-              </motion.h1>
-
-              {/* Single subhead */}
-              <motion.p
-                variants={springChild}
-                className="text-base sm:text-lg text-muted-foreground font-normal leading-relaxed max-w-[580px]"
-              >
-                The trust, receipt, and dispute-defense layer for autonomous AI commerce. Enforce
-                cryptographic human spend mandates pre-execution and turn disputed transactions into
-                evidence-ready legal dossiers.
-              </motion.p>
-
-              {/* One primary CTA and one ghost CTA (No 3-column row below) */}
-              <motion.div
-                variants={springChild}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2"
-              >
-                <Link href="/demo" tabIndex={-1}>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    trailingIcon={<ArrowRight className="w-4 h-4" />}
-                    className="w-full sm:w-auto"
-                  >
-                    Launch Interactive Demo
-                  </Button>
                 </Link>
 
-                <Link href="/disputes/disp-chargeback-demo" tabIndex={-1}>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    trailingIcon={<ExternalLink className="w-4 h-4" />}
-                    className="w-full sm:w-auto text-muted-foreground hover:text-foreground"
-                  >
-                    See Forensic Case Room
-                  </Button>
+                <Link
+                  href="/disputes/disp-chargeback-demo"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0A1F33] hover:text-[#0070BA] transition-colors underline-offset-4 hover:underline"
+                >
+                  <span>View forensic case room</span>
+                  <span aria-hidden="true">&rarr;</span>
                 </Link>
-              </motion.div>
+              </div>
             </motion.div>
 
-            {/* Right Column: Floating, Tilted Live Trust Passport Credential with Spring Reveal */}
-            <div className="lg:col-span-6 relative [perspective:1200px]">
-              {/* Subtle forensic dot matrix behind credential (CSS mask, not a generic gradient blob) */}
-              <div className="forensic-dot-matrix" aria-hidden="true" />
-
-              <motion.div
-                initial={{ opacity: 0, y: 32, rotateX: 5, rotateY: -6, scale: 0.96 }}
-                whileInView={{ opacity: 1, y: 0, rotateX: 2.5, rotateY: -3.5, scale: 1 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                }}
-                style={{ transformStyle: "preserve-3d" }}
-                className="relative z-10 transition-transform duration-300 ease-out hover:[transform:rotateX(0deg)_rotateY(0deg)_scale(1.01)]"
-              >
-                <div className="text-center mb-2 lg:text-right">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-secondary/80 px-2.5 py-1 rounded border border-border backdrop-blur-xs">
-                    Live Interactive Credential · SHA-256 Attested
+            {/* Right Zone: Flat Exhibit Panel Flush with Grid (No card, no drop shadow, no tabs) */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 320, damping: 32, delay: 0.08 }}
+              className="lg:col-span-5"
+            >
+              <div className="border-t border-[#0A1F33]/[0.2] pt-4 space-y-5">
+                {/* Monospace Case Number and ATTESTED Stamp */}
+                <div className="flex items-center justify-between font-mono text-[11px] text-[#4A5B6B]">
+                  <span className="tracking-wider">CASE NO. PP-2026-8942-US</span>
+                  <span className="border border-[#0F7B5F] text-[#0F7B5F] px-1.5 py-0.5 font-semibold text-[10px] tracking-widest uppercase">
+                    ATTESTED
                   </span>
                 </div>
-                <TrustPassportCredential
-                  passport={DEMO_HERO_PASSPORT}
-                  verification={DEMO_HERO_VERIFICATION}
-                />
-              </motion.div>
-            </div>
+
+                <div className="font-mono text-[10px] text-[#4A5B6B] uppercase tracking-wider">
+                  Primary Evidence Exhibit · Intercept Chain
+                </div>
+
+                {/* Primary Artifact: Horizontal Evidence Strip (Connected line items with timestamps and hashes) */}
+                <div className="space-y-3 font-mono text-xs border-y border-[#0A1F33]/[0.12] py-4">
+                  {/* Item 01 */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-[#0A1F33]">01 MANDATE</div>
+                      <div className="text-[11px] text-[#4A5B6B]">MAND-80-GIFT · Client gift ($80 cap)</div>
+                    </div>
+                    <div className="text-right space-y-0.5 shrink-0">
+                      <div className="text-[11px] text-[#4A5B6B] tabular-nums">18:29:00 UTC</div>
+                      <div className="text-[10px] text-[#0070BA] tabular-nums">sha256:4a8f901...</div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-dashed border-[#0A1F33]/[0.12]" />
+
+                  {/* Item 02 */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-[#0A1F33]">02 CHECKOUT</div>
+                      <div className="text-[11px] text-[#4A5B6B]">CAPTURE-7TY90 · $75.00 captured</div>
+                    </div>
+                    <div className="text-right space-y-0.5 shrink-0">
+                      <div className="text-[11px] text-[#4A5B6B] tabular-nums">18:29:45 UTC</div>
+                      <div className="text-[10px] text-[#0F7B5F]">paypal:verified</div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-dashed border-[#0A1F33]/[0.12]" />
+
+                  {/* Item 03 */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-[#0A1F33]">03 PASSPORT</div>
+                      <div className="text-[11px] text-[#4A5B6B]">PASS-8942-US · Sealed attestation</div>
+                    </div>
+                    <div className="text-right space-y-0.5 shrink-0">
+                      <div className="text-[11px] text-[#4A5B6B] tabular-nums">18:30:00 UTC</div>
+                      <div className="text-[10px] text-[#0070BA] tabular-nums">digest:92fe151...</div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-dashed border-[#0A1F33]/[0.12]" />
+
+                  {/* Item 04 */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-[#0A1F33]">04 DEFENSE</div>
+                      <div className="text-[11px] text-[#4A5B6B]">DISP-849201 · Dossier compiled</div>
+                    </div>
+                    <div className="text-right space-y-0.5 shrink-0">
+                      <div className="text-[11px] text-[#4A5B6B] tabular-nums">18:31:12 UTC</div>
+                      <div className="text-[10px] text-[#0F7B5F] font-semibold">readiness:98/100</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Signature Block in Serif Italic */}
+                <div className="font-serif italic text-xs text-[#4A5B6B] leading-relaxed pt-1">
+                  Attested by Jacob, Treasury &amp; Compliance Lead · Cryptographically sealed under PayPal
+                  Orders v2 agreement
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* SECTION (a): THE PROBLEM — UNBOUNDED AGENT SPEND & GATEWAY LIABILITY */}
-      <ScrollSection id="problem" className="py-20 md:py-28 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Section Header */}
-          <motion.div variants={springChild} className="max-w-3xl space-y-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-rose-500">
-              The Agent Spend Dilemma
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              Unbounded tool calling meets rigid payment networks.
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              When an autonomous LLM agent executes API tool calls against corporate payment methods, it
-              operates without pre-spend cryptographic bounds. If a prompt injection, loop recursion, or
-              model drift triggers an unauthorized purchase, traditional payment gateways simply settle the
-              charge.
+      {/* 2. PROBLEM SECTION */}
+      <section id="problem" className="py-24 md:py-32 border-t border-[#0A1F33]/[0.12]">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 space-y-12">
+          {/* Eyebrow */}
+          <div className="font-mono text-xs uppercase tracking-wider text-[#4A5B6B]">
+            Exhibit B · The Liability Gap
+          </div>
+
+          {/* Full-width editorial paragraph */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="space-y-6"
+          >
+            <p className="text-[17px] sm:text-[18px] text-[#4A5B6B] leading-[1.6] max-w-[62ch]">
+              Autonomous agents execute procurement, cloud infrastructure provisioning, and software
+              licensing through headless API tool calls. Traditional payment networks record settlements,
+              not prompts, parameters, or human authorization bounds. When an unintended transaction
+              occurs, the merchant faces total chargeback liability with zero admissible evidence.
             </p>
           </motion.div>
 
-          {/* Single Clear Visual Anchor: Institutional Interception Terminal */}
+          {/* Thin Rule */}
+          <div className="border-t border-[#0A1F33]/[0.12]" />
+
+          {/* Pull Quote in Serif */}
           <motion.div
-            variants={springChild}
-            className="rounded-xl border border-border bg-background overflow-hidden shadow-xs"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="space-y-4"
           >
-            {/* Terminal Window Header */}
-            <div className="px-5 py-3.5 bg-secondary/60 border-b border-border flex items-center justify-between text-xs font-mono text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-3.5 h-3.5 text-primary" />
-                <span className="font-semibold text-foreground">session #exec-490218-trace</span>
-                <span>·</span>
-                <span>real-time policy interceptor</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[11px] text-muted-foreground">Enforcement Active</span>
-              </div>
-            </div>
-
-            {/* Interception Body: Side-by-Side Direct Comparison */}
-            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border font-mono text-xs">
-              {/* Left Pane: Blocked Unbounded Proposal */}
-              <div className="p-6 space-y-4 bg-rose-500/[0.02]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-rose-500 font-bold">
-                    <XCircle className="w-4 h-4 shrink-0" />
-                    <span>UNBOUNDED AGENT REQUISITION</span>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold border border-rose-500/20">
-                    BLOCKED PRE-EXECUTION
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-secondary/50 border border-border space-y-1.5 text-[11px] leading-relaxed">
-                  <div className="text-muted-foreground">// Agent Tool Proposal Payload</div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;tool&quot;</span>: &quot;paypal_orders_create&quot;,
-                  </div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;item&quot;</span>: &quot;H100 Dedicated GPU Slice&quot;,
-                  </div>
-                  <div className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
-                    <span className="text-muted-foreground">&quot;amount&quot;</span>: 4850.00 USD,
-                  </div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;intent&quot;</span>: &quot;unsupervised cluster scale&quot;,
-                  </div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;human_mandate&quot;</span>: null
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="text-rose-600 dark:text-rose-400 font-semibold flex items-start gap-1.5">
-                    <AlertOctagon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>Breach: Exceeds maximum authorized cap of $80.00 (+5,962% overflow)</span>
-                  </div>
-                  <p className="text-muted-foreground leading-normal pl-5">
-                    Without Passport, this transaction would settle blindly on the card, resulting in an
-                    unrecoverable merchant loss upon chargeback.
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Pane: Approved Mandate Enforcement */}
-              <div className="p-6 space-y-4 bg-emerald-500/[0.02]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>MANDATE-BOUND TRANSACTION</span>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                    APPROVED &amp; CAPTURED
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-secondary/50 border border-border space-y-1.5 text-[11px] leading-relaxed">
-                  <div className="text-muted-foreground">// Verified Attestation Token</div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;mandate_id&quot;</span>: &quot;mandate-gift-card-demo&quot;,
-                  </div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;authorizer&quot;</span>: &quot;Jacob (Account Owner)&quot;,
-                  </div>
-                  <div className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
-                    <span className="text-muted-foreground">&quot;settled_amount&quot;</span>: 75.00 USD,
-                  </div>
-                  <div className="text-foreground">
-                    <span className="text-muted-foreground">&quot;paypal_capture&quot;</span>: &quot;CAPTURE-7TY90123L-SB&quot;,
-                  </div>
-                  <div className="text-foreground truncate">
-                    <span className="text-muted-foreground">&quot;sha256_seal&quot;</span>: &quot;92fe1516...e3eec61fe&quot;
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-start gap-1.5">
-                    <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>Deterministic Compliance: Within $80 limit · Category verified</span>
-                  </div>
-                  <p className="text-muted-foreground leading-normal pl-5">
-                    Settled via PayPal Orders v2 with Seller Protection. Sealed into an immutable Trust
-                    Passport ready for immediate dispute defense.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <blockquote className="font-serif italic font-normal text-2xl sm:text-3xl md:text-4xl text-[#0A1F33] leading-[1.25] max-w-[780px]">
+              &ldquo;Gateways settle dollars. They cannot prove to an issuing bank that a human authorized
+              the model to spend them.&rdquo;
+            </blockquote>
+            <p className="text-xs font-mono text-[#4A5B6B] tracking-wider uppercase">
+              &mdash; Forensic standard for autonomous financial liability
+            </p>
           </motion.div>
         </div>
-      </ScrollSection>
+      </section>
 
-      {/* SECTION (b): MANDATE → PURCHASE → PASSPORT PIPELINE */}
-      <ScrollSection id="pipeline" className="py-20 md:py-28 bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Section Header */}
-          <motion.div variants={springChild} className="max-w-3xl space-y-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary">
-              Deterministic Architecture
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              The Mandate &rarr; Purchase &rarr; Passport Pipeline
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              A continuous, cryptographically bound flow executing between human controllers, autonomous
-              agents, and the PayPal payment network.
-            </p>
-          </motion.div>
-
-          {/* Single Clear Visual Anchor: Continuous Sequential Pipeline Ledger */}
-          <motion.div
-            variants={springChild}
-            className="rounded-xl border border-border bg-card overflow-hidden shadow-xs"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border">
-              {/* Stage 1: Human Spend Mandate */}
-              <div className="p-6 space-y-4 relative">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-muted-foreground tracking-wider">
-                    STAGE 01
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-primary/10 text-primary border border-primary/20">
-                    POLICY GATE
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <FileCheck2 className="w-4 h-4 text-primary" />
-                    Human Spend Mandate
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Account owner issues policy: &quot;Client appreciation gift, max $80, digital gift cards
-                    only, 24h expiration.&quot;
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-secondary/60 border border-border space-y-2 text-xs font-mono">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Authorized Cap:</span>
-                    <span className="text-foreground font-bold tabular-nums">$80.00 USD</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Category:</span>
-                    <span className="text-foreground">digital gift cards</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Signed Digest:</span>
-                    <span className="text-primary truncate max-w-[140px]">sha256:4a8f901b...</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 2: Policy Interception & PayPal Execution */}
-              <div className="p-6 space-y-4 relative">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-muted-foreground tracking-wider">
-                    STAGE 02
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    PAYPAL SETTLEMENT
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    Interception &amp; Orders v2
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Deterministic evaluation validates the $75 proposal against mandate rules, then calls
-                    PayPal Orders v2 to capture payment.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-secondary/60 border border-border space-y-2 text-xs font-mono">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">PayPal Order ID:</span>
-                    <span className="text-foreground font-semibold">PAYPAL-ORD-8X92</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Gross Amount:</span>
-                    <span className="text-foreground font-bold tabular-nums">$75.00 USD</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Seller Protection:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">ELIGIBLE</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage 3: Cryptographic Trust Passport */}
-              <div className="p-6 space-y-4 relative">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-muted-foreground tracking-wider">
-                    STAGE 03
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-primary/10 text-primary border border-primary/20">
-                    EVIDENCE SEAL
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                    Trust Passport Attestation
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Hashes authorizer mandate, Gemini inference reasoning, line items, and settlement receipt
-                    into an immutable SHA-256 passport.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-secondary/60 border border-border space-y-2 text-xs font-mono">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Passport Number:</span>
-                    <span className="text-foreground font-semibold">PASS-2026-8942-US</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Defense Readiness:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
-                      98 / 100
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Audit Stream:</span>
-                    <span className="text-primary font-semibold">Chained to Block #8</span>
-                  </div>
-                </div>
-              </div>
+      {/* 3. PIPELINE SECTION */}
+      <section id="pipeline" className="py-24 md:py-32 border-t border-[#0A1F33]/[0.12]">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 space-y-14">
+          {/* Section Heading */}
+          <div className="space-y-2">
+            <div className="font-mono text-xs uppercase tracking-wider text-[#4A5B6B]">
+              Exhibit C · Pipeline
             </div>
-          </motion.div>
-        </div>
-      </ScrollSection>
-
-      {/* SECTION (c): THE DISPUTE DEFENSE MOMENT — FORENSIC DISPUTE AUTOPSY PREVIEW */}
-      <ScrollSection id="dispute-defense" className="relative py-20 md:py-28 bg-card border-b border-border overflow-hidden">
-        {/* Subtle animated grid and line-scan background (CSS masks, zero image assets) */}
-        <div className="forensic-masked-grid" aria-hidden="true" />
-        <div className="forensic-scan-line" aria-hidden="true" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
-          {/* Section Header */}
-          <motion.div variants={springChild} className="max-w-3xl space-y-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
-              The Dispute Defense Moment
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              When a chargeback arrives, the case is already defended.
+            <h2 className="font-serif font-normal text-3xl sm:text-4xl text-[#0A1F33] tracking-[-0.03em]">
+              The Four-Step Attestation Ledger
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              When a cardholder files an unauthorized transaction claim, Passport immediately runs a
-              Chargeback Autopsy: compiling the mandate, agent reasoning tokens, and delivery vouchers into a
-              compelling legal defense packet.
-            </p>
-          </motion.div>
+          </div>
 
-          {/* Single Clear Visual Anchor: Forensic Evidence Reconciliation Visual */}
+          {/* Horizontal Four-Step Ledger with Vertical Hairline Separators and 0.08s Stagger */}
           <motion.div
-            variants={springChild}
-            className="rounded-xl border border-border bg-background overflow-hidden shadow-xs"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.08,
+                },
+              },
+            }}
+            className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#0A1F33]/[0.12]"
           >
-            {/* Dossier Header Strip */}
-            <div className="p-6 bg-secondary/50 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs">
+            {/* Step 01 */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 16 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                },
+              }}
+              className="py-6 md:py-0 md:pr-8 first:md:pl-0 space-y-4"
+            >
+              <div className="font-mono text-sm font-semibold text-[#0070BA] tabular-nums">01</div>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground">DISPUTE AUTOPSY DOSSIER:</span>
-                  <span className="text-amber-500 font-bold">PP-D-849201</span>
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Claim: &quot;Cardholder states transaction was unauthorized by account holder.&quot;
-                </div>
+                <div className="font-serif text-lg font-normal text-[#0A1F33]">Human Spend Mandate</div>
+                <p className="text-xs text-[#4A5B6B] leading-relaxed">
+                  Authorizer sets hard dollar cap, allowable categories, and expiration before execution.
+                </p>
               </div>
+              <div className="font-mono text-[11px] text-[#4A5B6B] tabular-nums">18:29:00 UTC</div>
+            </motion.div>
 
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-[10px] text-muted-foreground uppercase">Response Window</div>
-                  <div className="text-foreground font-bold tabular-nums">6 Days Remaining</div>
-                </div>
-                <span className="px-2.5 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20">
-                  ACTION REQUIRED
+            {/* Step 02 */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 16 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                },
+              }}
+              className="py-6 md:py-0 md:px-8 space-y-4"
+            >
+              <div className="font-mono text-sm font-semibold text-[#0070BA] tabular-nums">02</div>
+              <div className="space-y-1">
+                <div className="font-serif text-lg font-normal text-[#0A1F33]">Deterministic Policy Gate</div>
+                <p className="text-xs text-[#4A5B6B] leading-relaxed">
+                  Pre-spend policy engine blocks out-of-bounds agent proposals before hitting payment
+                  networks.
+                </p>
+              </div>
+              <div className="font-mono text-[11px] text-[#4A5B6B] tabular-nums">18:29:12 UTC</div>
+            </motion.div>
+
+            {/* Step 03 */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 16 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                },
+              }}
+              className="py-6 md:py-0 md:px-8 space-y-4"
+            >
+              <div className="font-mono text-sm font-semibold text-[#0070BA] tabular-nums">03</div>
+              <div className="space-y-1">
+                <div className="font-serif text-lg font-normal text-[#0A1F33]">PayPal Settlement</div>
+                <p className="text-xs text-[#4A5B6B] leading-relaxed">
+                  Orders v2 capture creates binding settlement with verified Seller Protection eligibility.
+                </p>
+              </div>
+              <div className="font-mono text-[11px] text-[#4A5B6B] tabular-nums">18:29:45 UTC</div>
+            </motion.div>
+
+            {/* Step 04 */}
+            <motion.div
+              variants={{
+                hidden: { opacity: 0, y: 16 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { type: "spring", stiffness: 320, damping: 32 },
+                },
+              }}
+              className="py-6 md:py-0 md:pl-8 space-y-4"
+            >
+              <div className="font-mono text-sm font-semibold text-[#0070BA] tabular-nums">04</div>
+              <div className="space-y-1">
+                <div className="font-serif text-lg font-normal text-[#0A1F33]">Cryptographic Trust Passport</div>
+                <p className="text-xs text-[#4A5B6B] leading-relaxed">
+                  Attestation digest binds mandate, agent reasoning trace, and settlement into an immutable
+                  receipt.
+                </p>
+              </div>
+              <div className="font-mono text-[11px] text-[#4A5B6B] tabular-nums">18:30:00 UTC</div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 4. FORENSIC DISPUTE SECTION */}
+      <section id="dispute" className="py-24 md:py-32 border-t border-[#0A1F33]/[0.12]">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 space-y-12">
+          {/* Eyebrow */}
+          <div className="font-mono text-xs uppercase tracking-wider text-[#4A5B6B]">
+            Exhibit D · Chargeback Defense
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-start">
+            {/* Left: Large Serif Statement */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="lg:col-span-5 space-y-5"
+            >
+              <h2 className="font-serif font-normal text-3xl sm:text-4xl text-[#0A1F33] leading-[1.1] tracking-[-0.03em] max-w-[460px]">
+                When the purchase is challenged, the same passport becomes the defense.
+              </h2>
+              <p className="text-[17px] text-[#4A5B6B] leading-[1.6] max-w-[460px]">
+                Cardholders dispute unrecognized automated transactions. Passport automatically reconstructs
+                the authorization chain into a PayPal compelling evidence dossier within seconds.
+              </p>
+            </motion.div>
+
+            {/* Right: Flat Evidence-Reconciliation Strip with 5 Segments */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 320, damping: 32, delay: 0.08 }}
+              className="lg:col-span-7 space-y-5"
+            >
+              {/* Header with Case Metadata and Press-on Stamp */}
+              <div className="flex items-center justify-between border-b border-[#0A1F33]/[0.12] pb-3">
+                <span className="font-mono text-xs text-[#4A5B6B] uppercase tracking-wider">
+                  Dispute Case PP-D-849201 · Reconciliation Log
                 </span>
-              </div>
-            </div>
 
-            {/* Reconciliation Body */}
-            <div className="p-6 md:p-8 space-y-6">
-              {/* Evidence Reconciliation Progress Meter */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-muted-foreground">Evidence Reconciliation Index:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
-                    5 of 5 Verified Artifacts (100% Complete)
-                  </span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-full rounded-full transition-all duration-500" />
-                </div>
+                {/* Text Stamp Animation ("EVIDENCE GAP") that presses onto panel on scroll */}
+                <motion.div
+                  initial={{ scale: 1.45, opacity: 0, rotate: -4 }}
+                  whileInView={{ scale: 1, opacity: 1, rotate: -2 }}
+                  viewport={{ once: true }}
+                  transition={{ type: "spring", stiffness: 360, damping: 18, delay: 0.15 }}
+                  className="border-2 border-[#B45A00] text-[#B45A00] font-mono font-bold tracking-widest text-[10px] px-2 py-0.5 uppercase select-none"
+                >
+                  EVIDENCE GAP
+                </motion.div>
               </div>
 
-              {/* Forensic Artifact Chain */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
-                <div className="p-3.5 rounded-lg border border-border bg-card flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <div>
-                      <div className="text-foreground font-semibold">1. Human Spend Mandate</div>
-                      <div className="text-[10px] text-muted-foreground font-sans">
-                        Authorizer: Jacob · Hard Limit: $80.00
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">SHA-256</span>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-border bg-card flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <div>
-                      <div className="text-foreground font-semibold">2. Agent Intent Transcript</div>
-                      <div className="text-[10px] text-muted-foreground font-sans">
-                        Gemini 1.5 Pro reasoning tokens recorded
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">TRACE-490218</span>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-border bg-card flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <div>
-                      <div className="text-foreground font-semibold">3. PayPal Capture Receipt</div>
-                      <div className="text-[10px] text-muted-foreground font-sans">
-                        CAPTURE-7TY90123L-SB · Seller Protection
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                    ELIGIBLE
+              {/* 5 Segments */}
+              <div className="space-y-2.5 font-mono text-xs">
+                {/* Segment 1: Verified */}
+                <div className="flex items-center justify-between p-3 border-b border-[#0A1F33]/[0.08]">
+                  <div className="text-[#0A1F33]">01 · Human spend mandate &amp; authorizer identity</div>
+                  <span className="text-[#0F7B5F] font-semibold text-[11px] tracking-wide">
+                    VERIFIED
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-lg border border-border bg-card flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <div>
-                      <div className="text-foreground font-semibold">4. Electronic Delivery Proof</div>
-                      <div className="text-[10px] text-muted-foreground font-sans">
-                        Starbucks digital voucher dispatched to buyer
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">ECDSA-P256</span>
+                {/* Segment 2: Verified */}
+                <div className="flex items-center justify-between p-3 border-b border-[#0A1F33]/[0.08]">
+                  <div className="text-[#0A1F33]">02 · Gemini 1.5 Pro reasoning &amp; intent transcript</div>
+                  <span className="text-[#0F7B5F] font-semibold text-[11px] tracking-wide">
+                    VERIFIED
+                  </span>
+                </div>
+
+                {/* Segment 3: Verified */}
+                <div className="flex items-center justify-between p-3 border-b border-[#0A1F33]/[0.08]">
+                  <div className="text-[#0A1F33]">03 · PayPal Orders v2 capture receipt &amp; seller protection</div>
+                  <span className="text-[#0F7B5F] font-semibold text-[11px] tracking-wide">
+                    VERIFIED
+                  </span>
+                </div>
+
+                {/* Segment 4: Muted Amber */}
+                <div className="flex items-center justify-between p-3 border-b border-[#0A1F33]/[0.08] bg-[#B45A00]/[0.04]">
+                  <div className="text-[#0A1F33]">04 · Recipient digital voucher acknowledgment</div>
+                  <span className="text-[#B45A00] font-semibold text-[11px] tracking-wide">
+                    MISSING ACKNOWLEDGMENT
+                  </span>
+                </div>
+
+                {/* Segment 5: Muted Amber */}
+                <div className="flex items-center justify-between p-3 border-b border-[#0A1F33]/[0.08] bg-[#B45A00]/[0.04]">
+                  <div className="text-[#0A1F33]">05 · Counterparty electronic delivery log</div>
+                  <span className="text-[#B45A00] font-semibold text-[11px] tracking-wide">
+                    SMTP HEADER PENDING
+                  </span>
                 </div>
               </div>
 
-              {/* Gemini Classification & Mandatory Human Co-Signature */}
-              <div className="p-4 rounded-lg bg-secondary/50 border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 font-mono text-xs">
-                <div className="space-y-1">
-                  <div className="text-[11px] text-muted-foreground uppercase">Gemini Dispute Strategy</div>
-                  <div className="text-foreground font-semibold">
-                    COMPELLING_EVIDENCE_DIGITAL_DELIVERY (96% Confidence)
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
-                  <UserCheck className="w-4 h-4" />
-                  <span>Mandatory Human Co-Sign Ready</span>
-                </div>
+              {/* Single "Missing Proof" Annotation */}
+              <div className="text-[11px] font-mono text-[#B45A00] bg-[#B45A00]/[0.06] border border-[#B45A00]/25 p-3 leading-relaxed">
+                [ MISSING PROOF: Direct buyer delivery acknowledgment not returned by SMTP server.
+                Intangible goods seller protection coverage applied. ]
               </div>
 
-              {/* Ghost Button: "See the forensic case room" */}
-              <div className="pt-2 flex justify-start">
-                <Link href="/disputes/disp-chargeback-demo" tabIndex={-1}>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    trailingIcon={<ArrowRight className="w-4 h-4" />}
-                    className="border border-border text-foreground hover:bg-secondary/80"
-                  >
-                    See the forensic case room
-                  </Button>
+              {/* Link to forensic case room */}
+              <div className="pt-2">
+                <Link
+                  href="/disputes/disp-chargeback-demo"
+                  className="font-mono text-xs text-[#0070BA] hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>Open forensic case room PP-D-849201</span>
+                  <span aria-hidden="true">&rarr;</span>
                 </Link>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </ScrollSection>
-
-      {/* FINAL CALL TO ACTION */}
-      <section className="py-20 md:py-24 bg-card text-center relative overflow-hidden">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Make every AI-agent payment authorized, auditable, and defensible.
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Experience the complete financial control plane with interactive sandbox transactions and live
-            dispute autopsies.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link href="/demo" tabIndex={-1}>
-              <Button
-                variant="primary"
-                size="lg"
-                trailingIcon={<ArrowRight className="w-4 h-4" />}
-                className="w-full sm:w-auto"
-              >
-                Launch Live Demo Tour
-              </Button>
-            </Link>
-
-            <Link href="/dashboard" tabIndex={-1}>
-              <Button
-                variant="ghost"
-                size="lg"
-                trailingIcon={<ChevronRight className="w-4 h-4" />}
-                className="w-full sm:w-auto border border-border"
-              >
-                Open Operations Dashboard
-              </Button>
-            </Link>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-border py-8 bg-background text-xs text-muted-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="font-bold text-foreground">Passport</span>
-            <span>— Trust, receipt, and dispute-defense layer for AI-agent purchases.</span>
+      {/* 5. CLOSING CTA (NO CARD) */}
+      <section className="py-20 md:py-24 border-t border-[#0A1F33]/[0.12]">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <p className="font-serif italic text-xl sm:text-2xl text-[#0A1F33] leading-snug max-w-xl">
+            Every AI purchase should be authorized, auditable, and defensible.
+          </p>
+
+          <Link href="/demo">
+            <span className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-[#0070BA] hover:bg-[#005596] rounded transition-colors active:scale-[0.98] shrink-0">
+              Launch interactive demo
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      {/* EDITORIAL FOOTER */}
+      <footer className="border-t border-[#0A1F33]/[0.12] py-8 text-xs text-[#4A5B6B] font-mono">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            Passport · Financial Evidence Ledger · Built for PayPal AI Hackathon
           </div>
 
           <div className="flex items-center gap-6">
-            <Link href="/demo" className="hover:text-foreground transition-colors">
-              Interactive Demo
+            <Link href="/demo" className="hover:text-[#0A1F33] transition-colors">
+              Demo
             </Link>
-            <Link href="/dashboard" className="hover:text-foreground transition-colors">
+            <Link href="/dashboard" className="hover:text-[#0A1F33] transition-colors">
               Dashboard
             </Link>
-            <Link href="/passports" className="hover:text-foreground transition-colors">
-              Trust Passports
+            <Link href="/mandates" className="hover:text-[#0A1F33] transition-colors">
+              Mandates
             </Link>
-            <Link href="/disputes" className="hover:text-foreground transition-colors">
+            <Link href="/disputes" className="hover:text-[#0A1F33] transition-colors">
               Disputes
             </Link>
           </div>
