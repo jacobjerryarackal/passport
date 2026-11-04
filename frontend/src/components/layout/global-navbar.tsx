@@ -26,8 +26,8 @@ export function GlobalNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-2 sm:top-3 z-50 w-full max-w-[1400px] mx-auto px-4 sm:px-6">
-      <div className="relative rounded-full bg-white/80 dark:bg-[#09090B]/80 backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between transition-colors">
+    <header className="fixed top-4 inset-x-0 z-50 w-full max-w-[1400px] mx-auto px-4 sm:px-6 pointer-events-none">
+      <div className="pointer-events-auto relative rounded-full bg-white/80 dark:bg-[#09090B]/80 backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between transition-colors">
         {/* Left: Passport Logo */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
@@ -91,7 +91,7 @@ export function GlobalNavbar() {
 
       {/* Mobile Drawer (Expandable Glass Panel) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-2 p-3 rounded-2xl bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="pointer-events-auto lg:hidden mt-2 p-3 rounded-2xl bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-150">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
