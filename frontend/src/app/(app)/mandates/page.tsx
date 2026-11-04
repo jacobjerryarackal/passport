@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { ColDef } from "ag-grid-community";
+import { DataGrid } from "@/components/ui/data-grid";
 import {
   FileCheck2,
   Plus,
@@ -188,6 +190,189 @@ export default function MandatesPage() {
     );
   });
 
+  const mandateColumnDefs: ColDef<Mandate>[] = useMemo(
+    () => [
+      {
+        headerName: "Mandate Name",
+        field: "title",
+        minWidth: 260,
+        flex: 2,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          return (
+            <div className="flex flex-col justify-center h-full py-1">
+              <span className="font-display font-bold text-sm text-black dark:text-white leading-tight">
+                {mandate.title}
+              </span>
+              <span className="text-[11px] text-[#6C7378] dark:text-white/50 truncate max-w-[280px]">
+                {mandate.purpose}
+              </span>
+              <span className="text-[10px] font-mono text-[#002991] dark:text-[#60CDFF] leading-tight">
+                #{mandate.id.slice(0, 14)}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Category",
+        field: "allowedCategories",
+        minWidth: 160,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          let categoriesClean = mandate.allowedCategories;
+          try {
+            if (categoriesClean.startsWith("[")) {
+              categoriesClean = JSON.parse(categoriesClean).join(", ");
+            }
+          } catch {}
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/10 dark:border-[#60CDFF]/20 truncate">
+                [ {categoriesClean} ]
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Max Budget",
+        field: "maxAmount",
+        minWidth: 130,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          return (
+            <div className="flex items-center h-full font-mono font-extrabold text-black dark:text-white tabular-nums text-sm">
+              ${mandate.maxAmount.toFixed(2)} {mandate.currency}
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Current Burn",
+        field: "spentAmount",
+        minWidth: 220,
+        flex: 1.6,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          let spent = mandate.spentAmount ?? 0;
+          if (mandate.purchases && mandate.purchases.length > 0) {
+            spent = mandate.purchases.reduce(
+              (acc, p) => (p.status !== "FAILED" ? acc + p.amount : acc),
+              0
+            );
+          }
+          const burnRatio = mandate.maxAmount > 0 ? (spent / mandate.maxAmount) * 100 : 0;
+          const isOver80 = burnRatio >= 80;
+
+          return (
+            <div className="flex flex-col justify-center h-full w-full py-1 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-[#6C7378] dark:text-white/60 tabular-nums">
+                  ${spent.toFixed(2)} / ${mandate.maxAmount.toFixed(2)}
+                </span>
+                <span
+                  className={`font-bold tabular-nums ${
+                    isOver80
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-[#007A56] dark:text-emerald-400"
+                  }`}
+                >
+                  {burnRatio.toFixed(0)}%
+                </span>
+              </div>
+              <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isOver80
+                      ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                      : "bg-[#007A56] dark:bg-emerald-400"
+                  }`}
+                  style={{ width: `${Math.min(100, burnRatio)}%` }}
+                />
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Expiry",
+        field: "expiresAt",
+        minWidth: 150,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          return (
+            <div className="flex flex-col justify-center h-full font-mono text-[11px] text-[#6C7378] dark:text-white/60">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#6C7378] dark:text-white/40" />
+                <span>{mandate.expiryHours}h validity</span>
+              </div>
+              <div className="text-[10px] text-[#6C7378] dark:text-white/40 mt-0.5">
+                {formatDate(mandate.expiresAt)}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Status",
+        field: "status",
+        minWidth: 120,
+        flex: 0.9,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          let spent = mandate.spentAmount ?? 0;
+          if (mandate.purchases && mandate.purchases.length > 0) {
+            spent = mandate.purchases.reduce(
+              (acc, p) => (p.status !== "FAILED" ? acc + p.amount : acc),
+              0
+            );
+          }
+          const burnRatio = mandate.maxAmount > 0 ? (spent / mandate.maxAmount) * 100 : 0;
+          const isExhausted = mandate.status === "EXHAUSTED" || burnRatio >= 100;
+          const isActive = mandate.status === "ACTIVE";
+
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isExhausted
+                      ? "bg-amber-500"
+                      : isActive
+                      ? "bg-[#007A56] dark:bg-emerald-400"
+                      : "bg-black/30 dark:bg-white/30"
+                  }`}
+                />
+                <span
+                  className={
+                    isExhausted
+                      ? "text-amber-600 dark:text-amber-400"
+                      : isActive
+                      ? "text-[#007A56] dark:text-emerald-400"
+                      : "text-[#6C7378] dark:text-white/50"
+                  }
+                >
+                  {isExhausted ? "EXHAUSTED" : mandate.status}
+                </span>
+              </span>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
   return (
     <div className="space-y-8 w-full max-w-full">
       {/* 1. TOP EDITORIAL HEADER WITH SKY-BLUE PILL BUTTON */}
@@ -237,148 +422,15 @@ export default function MandatesPage() {
         </div>
       </div>
 
-      {/* 3. DENSE FULL-WIDTH DATA TABLE (NO PER-ROW CARD BACKGROUNDS, HAIRLINE BOTTOM BORDERS) */}
-      <div className="overflow-x-auto w-full">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-black/15 dark:border-white/15 text-[#6C7378] dark:text-white/50 uppercase font-mono text-[10px] tracking-wider">
-              <th className="py-3 px-4 font-bold">Mandate Name</th>
-              <th className="py-3 px-4 font-bold">Category</th>
-              <th className="py-3 px-4 font-bold">Max Budget</th>
-              <th className="py-3 px-4 font-bold w-[220px]">Current Burn</th>
-              <th className="py-3 px-4 font-bold">Expiry</th>
-              <th className="py-3 px-4 text-right font-bold">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/10 dark:divide-white/10">
-            {filteredMandates.map((mandate) => {
-              // Calculate spent burn ratio
-              let spent = mandate.spentAmount ?? 0;
-              if (mandate.purchases && mandate.purchases.length > 0) {
-                spent = mandate.purchases.reduce(
-                  (acc, p) => (p.status !== "FAILED" ? acc + p.amount : acc),
-                  0
-                );
-              }
-              const burnRatio = mandate.maxAmount > 0 ? (spent / mandate.maxAmount) * 100 : 0;
-              const isOver80 = burnRatio >= 80;
-              const isExhausted = mandate.status === "EXHAUSTED" || burnRatio >= 100;
-              const isActive = mandate.status === "ACTIVE";
-
-              // Clean categories display
-              let categoriesClean = mandate.allowedCategories;
-              try {
-                if (categoriesClean.startsWith("[")) {
-                  categoriesClean = JSON.parse(categoriesClean).join(", ");
-                }
-              } catch (e) {
-                // Keep raw string if parsing fails
-              }
-
-              return (
-                <tr
-                  key={mandate.id}
-                  className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                >
-                  {/* Mandate Name */}
-                  <td className="py-4 px-4">
-                    <div className="font-display font-bold text-sm text-black dark:text-white">
-                      {mandate.title}
-                    </div>
-                    <div className="text-[11px] text-[#6C7378] dark:text-white/50 max-w-[280px] truncate mt-0.5">
-                      {mandate.purpose}
-                    </div>
-                    <div className="text-[10px] font-mono text-[#002991] dark:text-[#60CDFF] mt-1">
-                      #{mandate.id.slice(0, 14)}
-                    </div>
-                  </td>
-
-                  {/* Category */}
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/10 dark:border-[#60CDFF]/20">
-                      [ {categoriesClean} ]
-                    </span>
-                  </td>
-
-                  {/* Max Budget (tabular-nums) */}
-                  <td className="py-4 px-4 font-mono font-extrabold text-black dark:text-white tabular-nums text-sm whitespace-nowrap">
-                    ${mandate.maxAmount.toFixed(2)} {mandate.currency}
-                  </td>
-
-                  {/* Current Burn: Thin horizontal progress bar that turns amber if over 80% */}
-                  <td className="py-4 px-4 w-[220px]">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="text-[#6C7378] dark:text-white/60 tabular-nums">
-                          ${spent.toFixed(2)} / ${mandate.maxAmount.toFixed(2)}
-                        </span>
-                        <span
-                          className={`font-bold tabular-nums ${
-                            isOver80
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-[#007A56] dark:text-emerald-400"
-                          }`}
-                        >
-                          {burnRatio.toFixed(0)}%
-                        </span>
-                      </div>
-
-                      {/* Thin horizontal progress bar */}
-                      <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            isOver80
-                              ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                              : "bg-[#007A56] dark:bg-emerald-400"
-                          }`}
-                          style={{ width: `${Math.min(100, burnRatio)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Expiry */}
-                  <td className="py-4 px-4 font-mono text-[11px] text-[#6C7378] dark:text-white/60 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-[#6C7378] dark:text-white/40" />
-                      <span>{mandate.expiryHours}h validity</span>
-                    </div>
-                    <div className="text-[10px] text-[#6C7378] dark:text-white/40 mt-0.5">
-                      {formatDate(mandate.expiresAt)}
-                    </div>
-                  </td>
-
-                  {/* Status: Minimal text + colored dot */}
-                  <td className="py-4 px-4 text-right whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isExhausted
-                            ? "bg-amber-500"
-                            : isActive
-                            ? "bg-[#007A56] dark:bg-emerald-400"
-                            : "bg-black/30 dark:bg-white/30"
-                        }`}
-                      />
-                      <span
-                        className={
-                          isExhausted
-                            ? "text-amber-600 dark:text-amber-400"
-                            : isActive
-                            ? "text-[#007A56] dark:text-emerald-400"
-                            : "text-[#6C7378] dark:text-white/50"
-                        }
-                      >
-                        {isExhausted ? "EXHAUSTED" : mandate.status}
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* 3. AG GRID COMPONENT FOR SPEND MANDATES */}
+      <DataGrid<Mandate>
+        rowData={filteredMandates}
+        columnDefs={mandateColumnDefs}
+        pagination={true}
+        paginationPageSize={10}
+        domLayout="autoHeight"
+        emptyMessage="No spend mandates found matching your query."
+      />
 
       {/* 4. SLEEK THEMED MODAL FOR "CREATE MANDATE" */}
       {isModalOpen && (

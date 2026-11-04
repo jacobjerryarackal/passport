@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { ColDef } from "ag-grid-community";
+import { DataGrid } from "@/components/ui/data-grid";
 import { StatusPill } from "@/components/ui/status-pill";
 import { HashInspector } from "@/components/ui/hash-inspector";
 import { StateBoundary } from "@/components/ui/state-boundary";
@@ -61,6 +63,101 @@ export default function AuditLogPage() {
       l.actor.toLowerCase().includes(search.toLowerCase()) ||
       l.eventHash.toLowerCase().includes(search.toLowerCase()) ||
       l.details.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const auditColumnDefs: ColDef<AuditLog>[] = useMemo(
+    () => [
+      {
+        headerName: "Action & Actor",
+        field: "action",
+        minWidth: 200,
+        flex: 1.5,
+        cellRenderer: (params: any) => {
+          const log = params.data as AuditLog;
+          if (!log) return null;
+          return (
+            <div className="flex flex-col justify-center h-full py-1">
+              <span className="font-mono font-bold text-black dark:text-white text-xs leading-tight">
+                {log.action}
+              </span>
+              <span className="text-[11px] text-[#6C7378] dark:text-white/60">
+                Actor: <strong className="text-black dark:text-white">{log.actor}</strong>
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Model / Component",
+        field: "actorModel",
+        minWidth: 170,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const log = params.data as AuditLog;
+          if (!log) return null;
+          return (
+            <div className="flex items-center h-full font-mono text-[11px] text-[#002991] dark:text-[#60CDFF] truncate">
+              {log.actorModel || "system-guard"}
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Event Details",
+        field: "details",
+        minWidth: 260,
+        flex: 2,
+        cellRenderer: (params: any) => {
+          const log = params.data as AuditLog;
+          if (!log) return null;
+          return (
+            <div className="flex items-center h-full">
+              <span
+                className="max-w-[340px] truncate text-[11px] text-[#1D1E20] dark:text-white/80 font-mono"
+                title={log.details}
+              >
+                {log.details}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Parent Hash → Event Hash",
+        field: "eventHash",
+        minWidth: 240,
+        flex: 1.8,
+        cellRenderer: (params: any) => {
+          const log = params.data as AuditLog;
+          if (!log) return null;
+          return (
+            <div className="flex items-center gap-2 h-full font-mono text-[10px] whitespace-nowrap">
+              <span className="text-[#6C7378] dark:text-white/50 font-mono">
+                {truncateHash(log.parentHash || "ROOT", 6, 4)}
+              </span>
+              <span className="text-[#6C7378] dark:text-white/40 font-mono">&rarr;</span>
+              <HashInspector hash={log.eventHash} truncateLength={6} />
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Timestamp",
+        field: "timestamp",
+        minWidth: 160,
+        flex: 1.1,
+        cellRenderer: (params: any) => {
+          const log = params.data as AuditLog;
+          if (!log) return null;
+          return (
+            <div className="flex items-center justify-end h-full font-mono text-[11px] text-[#6C7378] dark:text-white/60 tabular-nums whitespace-nowrap">
+              {formatDate(log.timestamp)}
+            </div>
+          );
+        },
+      },
+    ],
+    []
   );
 
   return (
@@ -127,86 +224,16 @@ export default function AuditLogPage() {
           />
         </div>
 
-        {/* Audit Log Timeline Table */}
-        <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#111114] overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-[#6C7378] dark:text-white/50 font-semibold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-4 px-4 font-mono w-[200px] min-w-[200px]">Action &amp; Actor</th>
-                  <th className="py-4 px-4 font-mono w-[180px] min-w-[180px]">Model / Agent Component</th>
-                  <th className="py-4 px-4 font-mono max-w-[320px]">Event Details</th>
-                  <th className="py-4 px-4 font-mono w-[240px] min-w-[240px]">Parent Hash &rarr; Event Hash</th>
-                  <th className="py-4 px-4 text-right font-mono w-[180px] min-w-[180px]">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/10 dark:divide-white/10">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-[#6C7378] dark:text-white/50">
-                      <StateBoundary type="loading" message="Verifying sequential SHA-256 Merkle chain..." />
-                    </td>
-                  </tr>
-                ) : filteredLogs.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-12">
-                      <StateBoundary
-                        type="empty"
-                        title="No Matching Audit Logs"
-                        message="Try clearing your search query to inspect the full cryptographic ledger."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                      {/* Action & Actor */}
-                      <td className="py-4 px-4 w-[200px] min-w-[200px]">
-                        <div className="font-mono font-bold text-black dark:text-white text-xs">
-                          {log.action}
-                        </div>
-                        <div className="text-[11px] text-[#6C7378] dark:text-white/60 mt-0.5">
-                          Actor: <strong className="text-black dark:text-white">{log.actor}</strong>
-                        </div>
-                      </td>
-
-                      {/* Model / Agent Component */}
-                      <td className="py-4 px-4 w-[180px] min-w-[180px] font-mono text-[11px] text-[#002991] dark:text-[#60CDFF]">
-                        {log.actorModel || "system-guard"}
-                      </td>
-
-                      {/* Event Details: Truncated so raw JSON never pushes out of bounds */}
-                      <td className="py-4 px-4 max-w-[320px]">
-                        <div
-                          className="max-w-[320px] truncate text-[11px] text-[#1D1E20] dark:text-white/80 font-mono"
-                          title={log.details}
-                        >
-                          {log.details}
-                        </div>
-                      </td>
-
-                      {/* Parent Hash -> Event Hash with fixed width */}
-                      <td className="py-4 px-4 w-[240px] min-w-[240px] font-mono text-[10px] whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#6C7378] dark:text-white/50 font-mono">
-                            {truncateHash(log.parentHash || "ROOT", 6, 4)}
-                          </span>
-                          <span className="text-[#6C7378] dark:text-white/40 font-mono">&rarr;</span>
-                          <HashInspector hash={log.eventHash} truncateLength={6} />
-                        </div>
-                      </td>
-
-                      {/* Timestamp with fixed width */}
-                      <td className="py-4 px-4 text-right font-mono text-[11px] text-[#6C7378] dark:text-white/60 tabular-nums whitespace-nowrap w-[180px] min-w-[180px]">
-                        {formatDate(log.timestamp)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* 3. AG GRID COMPONENT FOR CRYPTOGRAPHIC AUDIT STREAM */}
+        <DataGrid<AuditLog>
+          rowData={filteredLogs}
+          columnDefs={auditColumnDefs}
+          pagination={true}
+          paginationPageSize={10}
+          domLayout="autoHeight"
+          loading={loading}
+          emptyMessage="No matching cryptographic audit records found."
+        />
       </div>
     </div>
   );

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { motion, animate } from "framer-motion";
+import { ColDef } from "ag-grid-community";
+import { DataGrid } from "@/components/ui/data-grid";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -144,6 +146,125 @@ export function DashboardClient({
     }
   };
 
+  const transactionColumnDefs: ColDef<SettledTransaction>[] = useMemo(
+    () => [
+      {
+        headerName: "Passport ID",
+        field: "passportNumber",
+        minWidth: 150,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const tx = params.data;
+          if (!tx) return null;
+          return (
+            <Link
+              href={`/passports/${tx.id}`}
+              className="font-mono font-bold text-[#002991] dark:text-[#60CDFF] hover:underline flex items-center h-full"
+            >
+              {tx.passportNumber}
+            </Link>
+          );
+        },
+      },
+      {
+        headerName: "Requisition",
+        field: "requisition",
+        minWidth: 220,
+        flex: 2,
+        cellRenderer: (params: any) => {
+          const tx = params.data;
+          if (!tx) return null;
+          return (
+            <div className="flex flex-col justify-center h-full py-1">
+              <span className="font-semibold text-black dark:text-white truncate">
+                {tx.requisition}
+              </span>
+              <span className="text-[10px] text-[#6C7378] dark:text-white/40 font-mono leading-tight">
+                {tx.timestamp}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Amount",
+        field: "amount",
+        minWidth: 130,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const tx = params.data;
+          if (!tx) return null;
+          return (
+            <div className="flex items-center h-full">
+              <span className="font-mono font-bold text-black dark:text-white tabular-nums">
+                ${Number(tx.amount).toFixed(2)} {tx.currency}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Status",
+        field: "status",
+        minWidth: 130,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const tx = params.data;
+          if (!tx) return null;
+          const isSettled = tx.status === "SETTLED" || tx.status === "VERIFIED";
+          const isDisputed = tx.status === "DISPUTED";
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isDisputed
+                      ? "bg-amber-500 animate-pulse"
+                      : isSettled
+                      ? "bg-[#007A56] dark:bg-emerald-400"
+                      : "bg-rose-500"
+                  }`}
+                />
+                <span
+                  className={
+                    isDisputed
+                      ? "text-amber-600 dark:text-amber-400"
+                      : isSettled
+                      ? "text-[#007A56] dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400"
+                  }
+                >
+                  {tx.status}
+                </span>
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Action",
+        minWidth: 100,
+        flex: 0.8,
+        cellRenderer: (params: any) => {
+          const tx = params.data;
+          if (!tx) return null;
+          return (
+            <div className="flex items-center justify-end h-full">
+              <Link
+                href={`/passports/${tx.id}`}
+                className="font-medium text-xs text-[#002991] dark:text-[#60CDFF] hover:underline inline-flex items-center gap-1"
+              >
+                <span>Inspect</span>
+                <span>&rarr;</span>
+              </Link>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
   return (
     <div className="w-full space-y-10">
       {/* 1. EDITORIAL HEADER WITH SKY-BLUE SIMULATE DISPUTE PILL BUTTON */}
@@ -266,106 +387,15 @@ export function DashboardClient({
             </span>
           </div>
 
-          {/* Dense Data Table: No Card Backgrounds Per Row, Hairline Borders */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-black/15 dark:border-white/15 text-[#6C7378] dark:text-white/50 uppercase font-mono text-[10px] tracking-wider">
-                  <th className="py-2.5 pr-4 font-bold">Passport ID</th>
-                  <th className="py-2.5 px-3 font-bold">Requisition</th>
-                  <th className="py-2.5 px-3 font-bold">Amount</th>
-                  <th className="py-2.5 px-3 font-bold">Status</th>
-                  <th className="py-2.5 pl-3 text-right font-bold">Action</th>
-                </tr>
-              </thead>
-              <motion.tbody
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.02,
-                    },
-                  },
-                }}
-              >
-                {transactions.map((tx) => {
-                  const isSettled = tx.status === "SETTLED" || tx.status === "VERIFIED";
-                  const isDisputed = tx.status === "DISPUTED";
-
-                  return (
-                    <motion.tr
-                      key={tx.id}
-                      variants={{
-                        hidden: { opacity: 0, y: 6 },
-                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-                      }}
-                      className="border-b border-black/10 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors group"
-                    >
-                      {/* Passport ID */}
-                      <td className="py-3.5 pr-4 font-mono font-bold text-[#002991] dark:text-[#60CDFF] whitespace-nowrap">
-                        <Link href={`/passports/${tx.id}`} className="hover:underline">
-                          {tx.passportNumber}
-                        </Link>
-                      </td>
-
-                      {/* Requisition */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-semibold text-black dark:text-white truncate max-w-[200px]">
-                          {tx.requisition}
-                        </div>
-                        <div className="text-[10px] text-[#6C7378] dark:text-white/40 font-mono">
-                          {tx.timestamp}
-                        </div>
-                      </td>
-
-                      {/* Amount */}
-                      <td className="py-3.5 px-3 font-mono font-bold text-black dark:text-white tabular-nums whitespace-nowrap">
-                        ${tx.amount.toFixed(2)} {tx.currency}
-                      </td>
-
-                      {/* Status: Minimal text + colored dot */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              isDisputed
-                                ? "bg-amber-500 animate-pulse"
-                                : isSettled
-                                ? "bg-[#007A56] dark:bg-emerald-400"
-                                : "bg-rose-500"
-                            }`}
-                          />
-                          <span
-                            className={
-                              isDisputed
-                                ? "text-amber-600 dark:text-amber-400"
-                                : isSettled
-                                ? "text-[#007A56] dark:text-emerald-400"
-                                : "text-rose-600 dark:text-rose-400"
-                            }
-                          >
-                            {tx.status}
-                          </span>
-                        </span>
-                      </td>
-
-                      {/* Action: Ghost link */}
-                      <td className="py-3.5 pl-3 text-right whitespace-nowrap">
-                        <Link
-                          href={`/passports/${tx.id}`}
-                          className="font-medium text-xs text-[#002991] dark:text-[#60CDFF] hover:underline inline-flex items-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity"
-                        >
-                          <span>Inspect</span>
-                          <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                        </Link>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </motion.tbody>
-            </table>
-          </div>
+          {/* AG Grid Component: Settled Transactions */}
+          <DataGrid<SettledTransaction>
+            rowData={transactions}
+            columnDefs={transactionColumnDefs}
+            pagination={true}
+            paginationPageSize={10}
+            domLayout="autoHeight"
+            emptyMessage="No settled transactions recorded."
+          />
         </div>
 
         {/* RIGHT COLUMN (5 COLS): DISPUTE FORENSICS INCIDENT ROOM */}

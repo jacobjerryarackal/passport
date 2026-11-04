@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { ColDef } from "ag-grid-community";
+import { DataGrid } from "@/components/ui/data-grid";
 import {
   Search,
   RefreshCw,
@@ -236,6 +238,125 @@ export default function EvidenceTimelinePage() {
     URL.revokeObjectURL(url);
   };
 
+  const evidenceColumnDefs: ColDef<EvidenceItem>[] = useMemo(
+    () => [
+      {
+        headerName: "Artifact Title & Description",
+        field: "title",
+        minWidth: 280,
+        flex: 2,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex flex-col justify-center h-full py-1">
+              <span
+                className="font-bold text-black dark:text-white text-xs truncate leading-tight"
+                title={item.title}
+              >
+                {item.title}
+              </span>
+              <span
+                className="text-[11px] text-[#6C7378] dark:text-white/50 truncate max-w-[340px]"
+                title={item.description}
+              >
+                {item.description}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Evidence Type",
+        field: "type",
+        minWidth: 170,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex items-center h-full font-mono text-[11px] font-bold text-[#0070BA] dark:text-[#60CDFF] truncate">
+              {item.type}
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Source System",
+        field: "source",
+        minWidth: 150,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 text-[10px] font-mono font-semibold text-black dark:text-white border border-black/5 dark:border-white/10">
+                {item.source === "PAYPAL_API" ? (
+                  <CreditCard className="w-3 h-3 text-[#0070BA] dark:text-[#60CDFF]" />
+                ) : item.source === "GEMINI_AGENT" ? (
+                  <Bot className="w-3 h-3 text-[#007A56] dark:text-[#60CDFF]" />
+                ) : (
+                  <ShieldCheck className="w-3 h-3 text-[#007A56] dark:text-[#60CDFF]" />
+                )}
+                {item.source}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Integrity Hash (SHA-256)",
+        field: "hash",
+        minWidth: 220,
+        flex: 1.5,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex items-center h-full">
+              <HashCell hash={item.hash} />
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Status",
+        field: "status",
+        minWidth: 110,
+        flex: 0.8,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#007A56] dark:text-[#60CDFF]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#007A56] dark:bg-[#60CDFF]" />
+                {item.status}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Timestamp",
+        field: "createdAt",
+        minWidth: 140,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const item = params.data as EvidenceItem;
+          if (!item) return null;
+          return (
+            <div className="flex items-center justify-end h-full text-[11px] text-[#6C7378] dark:text-white/50 font-mono tabular-nums">
+              {formatDate(item.createdAt)}
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
   return (
     <div className="space-y-8 w-full max-w-full">
       {/* 1. TOP EDITORIAL HEADER */}
@@ -313,118 +434,16 @@ export default function EvidenceTimelinePage() {
         </div>
       </div>
 
-      {/* 3. DENSE FULL-WIDTH DATA TABLE (NO PER-ROW CARDS, HAIRLINE DIVIDERS) */}
-      <div className="overflow-x-auto w-full">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-black/15 dark:border-white/15 text-[#6C7378] dark:text-white/50 uppercase font-mono text-[10px] tracking-wider">
-              <th className="py-3 px-4 font-bold min-w-[280px] max-w-[340px]">
-                Artifact Title &amp; Description
-              </th>
-              <th className="py-3 px-4 font-bold w-[190px] min-w-[170px]">
-                Evidence Type
-              </th>
-              <th className="py-3 px-4 font-bold w-[150px] min-w-[140px]">
-                Source System
-              </th>
-              <th className="py-3 px-4 font-bold w-[250px] min-w-[220px]">
-                Integrity Hash (SHA-256)
-              </th>
-              <th className="py-3 px-4 font-bold w-[110px] min-w-[100px]">
-                Status
-              </th>
-              <th className="py-3 px-4 text-right font-bold w-[160px] min-w-[140px]">
-                Timestamp
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/5 dark:divide-white/10">
-            {loading && items.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-16 text-center text-[#6C7378] dark:text-white/40">
-                  <div className="flex flex-col items-center gap-2">
-                    <RefreshCw className="w-5 h-5 animate-spin text-[#60CDFF]" />
-                    <span className="font-mono text-xs">Loading cryptographic evidence items...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-16 text-center text-[#6C7378] dark:text-white/40">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-black dark:text-white text-sm">
-                      No Matching Evidence Artifacts Found
-                    </p>
-                    <p className="text-xs">
-                      Try clearing your search query or selecting &quot;All Sources&quot;.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-black/10 dark:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                >
-                  {/* Artifact Title & Description (Truncated) */}
-                  <td className="py-4 px-4 min-w-[280px] max-w-[340px]">
-                    <div
-                      className="font-bold text-black dark:text-white text-xs truncate"
-                      title={item.title}
-                    >
-                      {item.title}
-                    </div>
-                    <div
-                      className="text-[11px] text-[#6C7378] dark:text-white/50 truncate mt-0.5"
-                      title={item.description}
-                    >
-                      {item.description}
-                    </div>
-                  </td>
-
-                  {/* Evidence Type */}
-                  <td className="py-4 px-4 w-[190px] min-w-[170px] font-mono text-[11px] font-bold text-[#0070BA] dark:text-[#60CDFF]">
-                    {item.type}
-                  </td>
-
-                  {/* Source System */}
-                  <td className="py-4 px-4 w-[150px] min-w-[140px]">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 text-[10px] font-mono font-semibold text-black dark:text-white border border-black/5 dark:border-white/10">
-                      {item.source === "PAYPAL_API" ? (
-                        <CreditCard className="w-3 h-3 text-[#0070BA] dark:text-[#60CDFF]" />
-                      ) : item.source === "GEMINI_AGENT" ? (
-                        <Bot className="w-3 h-3 text-[#007A56] dark:text-[#60CDFF]" />
-                      ) : (
-                        <ShieldCheck className="w-3 h-3 text-[#007A56] dark:text-[#60CDFF]" />
-                      )}
-                      {item.source}
-                    </span>
-                  </td>
-
-                  {/* Integrity Hash (SHA-256) with Copy */}
-                  <td className="py-4 px-4 w-[250px] min-w-[220px]">
-                    <HashCell hash={item.hash} />
-                  </td>
-
-                  {/* Status */}
-                  <td className="py-4 px-4 w-[110px] min-w-[100px]">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#007A56] dark:text-[#60CDFF]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#007A56] dark:bg-[#60CDFF]" />
-                      {item.status}
-                    </span>
-                  </td>
-
-                  {/* Timestamp */}
-                  <td className="py-4 px-4 text-right w-[160px] min-w-[140px] text-[11px] text-[#6C7378] dark:text-white/50 font-mono tabular-nums">
-                    {formatDate(item.createdAt)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* 3. AG GRID COMPONENT FOR EVIDENCE TIMELINE */}
+      <DataGrid<EvidenceItem>
+        rowData={filtered}
+        columnDefs={evidenceColumnDefs}
+        pagination={true}
+        paginationPageSize={10}
+        domLayout="autoHeight"
+        loading={loading}
+        emptyMessage="No matching evidence artifacts found."
+      />
     </div>
   );
 }
