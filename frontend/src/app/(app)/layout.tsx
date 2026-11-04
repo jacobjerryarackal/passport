@@ -11,7 +11,7 @@ export default function AppLayout({
       <GlobalNavbar />
 
       {/* Main Internal Content Area */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 pb-20">
         {children}
       </main>
     </div>
