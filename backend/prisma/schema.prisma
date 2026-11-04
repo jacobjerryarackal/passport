@@ -1,0 +1,165 @@
+// Prisma schema for Passport - AI Agent Spend Mandate & Dispute Defense Layer
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Mandate {
+  id                String             @id @default(uuid())
+  title             String
+  purpose           String
+  maxAmount         Float
+  currency          String             @default("USD")
+  allowedCategories String             // JSON string array e.g. ["digital gift cards"]
+  expiryHours       Int                @default(24)
+  expiresAt         DateTime
+  refundPolicy      String
+  status            String             @default("ACTIVE") // ACTIVE, EXPIRED, EXHAUSTED, REVOKED
+  rawPrompt         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  proposals         PurchaseProposal[]
+  purchases         Purchase[]
+  passports         TrustPassport[]
+  auditLogs         AuditLog[]
+}
+
+model PurchaseProposal {
+  id                String    @id @default(uuid())
+  mandateId         String
+  mandate           Mandate   @relation(fields: [mandateId], references: [id], onDelete: Cascade)
+  agentModel        String    @default("gemini-1.5-pro")
+  itemName          String
+  itemCategory      String
+  amount            Float
+  currency          String    @default("USD")
+  recipient         String
+  reasoning         String
+  validationStatus  String    // APPROVED, BLOCKED
+  violationReason   String?
+  validationChecks  String    // JSON string of individual checks
+  createdAt         DateTime  @default(now())
+
+  purchase          Purchase?
+}
+
+model Purchase {
+  id                 String             @id @default(uuid())
+  mandateId          String
+  mandate            Mandate            @relation(fields: [mandateId], references: [id])
+  proposalId         String             @unique
+  proposal           PurchaseProposal   @relation(fields: [proposalId], references: [id])
+  paypalOrderId      String             @unique
+  paypalCaptureId    String?            @unique
+  status             String             @default("PENDING") // PENDING, COMPLETED, FAILED, DISPUTED, REFUNDED
+  amount             Float
+  currency           String             @default("USD")
+  merchantName       String             @default("Digital Merchant Partner")
+  payerEmail         String             @default("agent-wallet@passport.internal")
+  paymentMethod      String             @default("PayPal Sandbox")
+  mcpSessionId       String?            // PayPal MCP agent toolkit reference
+  rawPaypalResponse  String?            // JSON
+  createdAt          DateTime           @default(now())
+  completedAt        DateTime?
+
+  passport           TrustPassport?
+  disputes           Dispute[]
+}
+
+model TrustPassport {
+  id                    String    @id @default(uuid())
+  passportNumber        String    @unique // e.g. PASS-2026-XXXX
+  purchaseId            String    @unique
+  purchase              Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  mandateId             String
+  mandate               Mandate   @relation(fields: [mandateId], references: [id])
+  passportHash          String    // SHA-256 fingerprint
+  previousPassportHash  String?   // Merkle audit link
+  signature             String    // Cryptographic signature
+  status                String    @default("VALID") // VALID, FLAGGED, DISPUTED, SETTLED
+  authorizationData     String    // JSON snapshot
+  transactionData       String    // JSON snapshot
+  agentTrailData        String    // JSON snapshot
+  refundEligibility     String    // JSON terms & status
+  disputeReadinessScore Int       @default(95)
+  evidencePack          String    // JSON array of evidence points
+  qrCodePayload         String
+  issuedAt              DateTime  @default(now())
+
+  disputes              Dispute[]
+}
+
+model Dispute {
+  id                    String         @id @default(uuid())
+  paypalDisputeId       String         @unique // e.g. PP-D-98124
+  purchaseId            String
+  purchase              Purchase       @relation(fields: [purchaseId], references: [id])
+  passportId            String?
+  passport              TrustPassport? @relation(fields: [passportId], references: [id])
+  status                String         @default("ACTION_REQUIRED") // ACTION_REQUIRED, CO_SIGNED, SUBMITTED, RESOLVED_MERCHANT_FAVOR, RESOLVED_BUYER_FAVOR
+  disputeReason         String         // UNAUTHORIZED_TRANSACTION, MERCHANDISE_OR_SERVICE_NOT_RECEIVED
+  disputeAmount         Float
+  currency              String         @default("USD")
+  disputeLifeCycleStage String         @default("CHARGEBACK") // INQUIRY, CHARGEBACK, PRE_ARBITRATION
+  dueDate               DateTime
+  buyerNotes            String?
+  classification        String?        // JSON from Gemini classification
+  evidenceChecklist     String?        // JSON array of checklist items
+  evidenceGaps          String?        // JSON array of missing evidence
+  draftResponse         String?        // Gemini drafted defense
+  cosignedBy            String?
+  cosignedAt            DateTime?
+  submittedAt           DateTime?
+  submissionPayload     String?        // Final JSON sent to PayPal
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  evidenceItems         EvidenceItem[]
+}
+
+model EvidenceItem {
+  id          String   @id @default(uuid())
+  disputeId   String
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  type        String   // MANDATE_RECORD, PAYPAL_RECEIPT, AGENT_AUDIT_TRAIL, DELIVERY_PROOF, HUMAN_CO_SIGNATURE
+  title       String
+  description String
+  status      String   @default("VERIFIED") // VERIFIED, ATTACHED, MISSING, ACTION_REQUIRED
+  source      String   // SYSTEM, PAYPAL_API, GEMINI_AGENT, MERCHANT_INPUT
+  hash        String   // SHA-256 integrity hash
+  metadata    String?  // JSON details
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  mandateId  String?
+  mandate    Mandate? @relation(fields: [mandateId], references: [id])
+  action     String   // MANDATE_CREATED, PURCHASE_PROPOSED, VALIDATION_PASSED, etc.
+  actor      String   // HUMAN_ADMIN, PURCHASE_AGENT, SYSTEM_VALIDATOR, PAYPAL_WEBHOOK, DISPUTE_AGENT
+  actorModel String?
+  details    String   // JSON text
+  eventHash  String   // SHA-256 hash
+  parentHash String?
+  timestamp  DateTime @default(now())
+}
+
+model WebhookEvent {
+  id             String   @id @default(uuid())
+  paypalEventId  String?  @unique
+  eventType      String
+  summary        String?
+  payload        String   // JSON
+  signatureValid Boolean  @default(true)
+  simulated      Boolean  @default(false)
+  processed      Boolean  @default(false)
+  error          String?
+  receivedAt     DateTime @default(now())
+}
+

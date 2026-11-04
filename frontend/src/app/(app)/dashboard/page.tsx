@@ -1,4 +1,3 @@
-import prisma from "@/server/db/prisma";
 import {
   DashboardClient,
   SettledTransaction,
@@ -8,7 +7,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // Fetch real data from Prisma with error resilience
+  // Fetch real data from backend API with error resilience
   let mandates: any[] = [];
   let purchases: any[] = [];
   let proposals: any[] = [];
@@ -17,43 +16,21 @@ export default async function DashboardPage() {
   let auditLogs: any[] = [];
 
   try {
-    [mandates, purchases, proposals, passports, disputes, auditLogs] =
-      await Promise.all([
-        prisma.mandate.findMany({
-          orderBy: { createdAt: "desc" },
-          include: { purchases: true, passports: true },
-        }),
-        prisma.purchase.findMany({
-          orderBy: { createdAt: "desc" },
-          take: 12,
-          include: { mandate: true, proposal: true, passport: true },
-        }),
-        prisma.purchaseProposal.findMany({
-          orderBy: { createdAt: "desc" },
-          take: 12,
-          include: { mandate: true },
-        }),
-        prisma.trustPassport.findMany({
-          orderBy: { issuedAt: "desc" },
-          take: 12,
-          include: {
-            purchase: {
-              include: { proposal: true },
-            },
-            mandate: true,
-          },
-        }),
-        prisma.dispute.findMany({
-          orderBy: { createdAt: "desc" },
-          include: { purchase: true, passport: true, evidenceItems: true },
-        }),
-        prisma.auditLog.findMany({
-          orderBy: { timestamp: "desc" },
-          take: 10,
-        }),
-      ]);
+    const res = await fetch("http://localhost:4000/api/dashboard", {
+      next: { revalidate: 0 },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      mandates = data.mandates || [];
+      purchases = data.purchases || [];
+      proposals = data.proposals || [];
+      passports = data.passports || [];
+      disputes = data.disputes || [];
+      auditLogs = data.auditLogs || [];
+    }
   } catch (err) {
-    console.error("Dashboard database query error, using baseline fallback:", err);
+    // Graceful fallback to baseline default data when backend is not reached
   }
 
   // Baseline mock data in case database is empty

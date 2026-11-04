@@ -1,4 +1,3 @@
-import prisma from "@/server/db/prisma";
 import Link from "next/link";
 import {
   AlertOctagon,
@@ -30,21 +29,16 @@ export default async function DisputesListPage() {
   let dbDisputes: any[] = [];
 
   try {
-    dbDisputes = await prisma.dispute.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        passport: true,
-        purchase: {
-          include: {
-            mandate: true,
-            proposal: true,
-          },
-        },
-        evidenceItems: true,
-      },
+    const res = await fetch("http://localhost:4000/api/disputes", {
+      next: { revalidate: 0 },
+      cache: "no-store",
     });
+    if (res.ok) {
+      const data = await res.json();
+      dbDisputes = data.disputes || [];
+    }
   } catch (err) {
-    console.error("Failed to query disputes from db:", err);
+    // Graceful fallback to default seed data when backend is not reached
   }
 
   // Seeded defaults in case DB is fresh
