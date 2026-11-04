@@ -9,6 +9,7 @@ import paypalRouter from "./paypal";
 import webhooksRouter from "./webhooks";
 import demoRouter from "./demo";
 import dashboardRouter from "./dashboard";
+import agentRouter from "./agent";
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use("/paypal", paypalRouter);
 router.use("/webhooks", webhooksRouter);
 router.use("/demo", demoRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/agent", agentRouter);
 
 export default router;
 

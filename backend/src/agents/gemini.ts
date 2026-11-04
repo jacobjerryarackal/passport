@@ -185,6 +185,131 @@ Return ONLY valid JSON:
   }
 }
 
+// 2b. Trigger to Purchase Proposal Parser (Agent Simulator)
+export interface TriggerProposalResult {
+  itemName: string;
+  amount: number;
+  currency: string;
+  merchant: string;
+  category: string;
+  recipient: string;
+  reasoning: string;
+}
+
+export async function parseTriggerToProposal(params: {
+  triggerText: string;
+  mandate: {
+    title: string;
+    purpose: string;
+    maxAmount: number;
+    currency: string;
+    allowedCategories: string[];
+  };
+}): Promise<TriggerProposalResult> {
+  const text = params.triggerText.toLowerCase();
+
+  // Scenario 1: Client Gift / Acme
+  if (text.includes("acme") || text.includes("gift") || text.includes("thank-you") || text.includes("thank you")) {
+    return {
+      itemName: "Starbucks Digital e-Gift Card ($75)",
+      amount: 75.0,
+      currency: "USD",
+      merchant: "Starbucks Digital Rewards Network",
+      category: "digital gift cards",
+      recipient: "vip-client@acme.corp",
+      reasoning: "Selected a $75 Starbucks Digital e-Gift Card for Acme client appreciation to celebrate deal closing under the spend mandate.",
+    };
+  }
+
+  // Scenario 2: Office Equipment / Chair
+  if (text.includes("chair") || text.includes("ergonomic") || text.includes("office equipment") || text.includes("new hire")) {
+    return {
+      itemName: "Ergonomic Office Chair & Lumbar Support",
+      amount: 120.0,
+      currency: "USD",
+      merchant: "Herman Miller Authorized Dealer",
+      category: "physical equipment",
+      recipient: "new-hire@internal.corp",
+      reasoning: "Procuring an ergonomic chair for newly hired employee as requested in team onboarding ticket.",
+    };
+  }
+
+  // Scenario 3: Subscription Renewal / Figma
+  if (text.includes("figma") || text.includes("subscription") || text.includes("renewal") || text.includes("seat")) {
+    return {
+      itemName: "Figma Professional Annual Subscription",
+      amount: 45.0,
+      currency: "USD",
+      merchant: "Figma Inc.",
+      category: "software subscriptions",
+      recipient: "design-team@internal.corp",
+      reasoning: "Renewing Figma Professional annual seat for collaborative product design workflows.",
+    };
+  }
+
+  // Fallback defaults for custom user input
+  const defaultCustom: TriggerProposalResult = {
+    itemName: "Digital Business Services Voucher",
+    amount: 50.0,
+    currency: params.mandate.currency || "USD",
+    merchant: "Corporate Enterprise Services",
+    category: params.mandate.allowedCategories[0] || "business services",
+    recipient: "requester@internal.corp",
+    reasoning: `Synthesized purchase proposal to satisfy business trigger: "${params.triggerText.slice(0, 100)}"`,
+  };
+
+  // Heuristic amount extraction
+  const amtMatch = params.triggerText.match(/\$(\d+(\.\d+)?)/);
+  if (amtMatch) {
+    defaultCustom.amount = parseFloat(amtMatch[1]);
+  }
+
+  if (!isGeminiConfigured() || !genAI) {
+    return defaultCustom;
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const prompt = `You are an AI purchasing agent operating under corporate financial governance.
+Active Mandate:
+- Purpose: ${params.mandate.purpose}
+- Max Budget: $${params.mandate.maxAmount} ${params.mandate.currency}
+- Authorized Categories: ${JSON.stringify(params.mandate.allowedCategories)}
+
+Inbound Business Trigger (Support Ticket or Email):
+"${params.triggerText}"
+
+Synthesize a specific purchase proposal to satisfy the trigger intent.
+Return ONLY valid JSON matching:
+{
+  "itemName": string,
+  "amount": number,
+  "currency": "USD",
+  "merchant": string,
+  "category": string,
+  "recipient": string,
+  "reasoning": string
+}`;
+
+    const result = await model.generateContent(prompt);
+    const cleaned = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      itemName: parsed.itemName || defaultCustom.itemName,
+      amount: Number(parsed.amount) || defaultCustom.amount,
+      currency: parsed.currency || "USD",
+      merchant: parsed.merchant || defaultCustom.merchant,
+      category: parsed.category || defaultCustom.category,
+      recipient: parsed.recipient || defaultCustom.recipient,
+      reasoning: parsed.reasoning || defaultCustom.reasoning,
+    };
+  } catch (err) {
+    console.warn("Gemini trigger parsing failed, falling back to heuristics:", err);
+    return defaultCustom;
+  }
+}
+
 // 3. Dispute Classifier & Chargeback Autopsy Agent
 export interface DisputeAutopsyAnalysis {
   classification: {

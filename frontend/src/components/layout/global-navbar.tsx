@@ -13,6 +13,7 @@ export interface NavItem {
 
 const defaultAppNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard" },
+  { name: "Simulator", href: "/simulator" },
   { name: "Mandates", href: "/mandates" },
   { name: "Purchases", href: "/purchases" },
   { name: "Passports", href: "/passports" },

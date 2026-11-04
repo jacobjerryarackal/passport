@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../db/prisma";
 import { runPurchaseAgent } from "../agents/purchase-agent";
+import { validateProposalAgainstMandate } from "../mandates/validator";
 import { createPayPalOrder, capturePayPalOrder } from "../paypal/orders";
 import { generatePassportHash, signPassport, calculateDisputeReadinessScore } from "../verification/hasher";
 import { logAuditEvent } from "../audit/logger";
@@ -11,12 +12,104 @@ const router = Router();
 // POST /api/purchases/propose
 router.post("/propose", async (req: Request, res: Response) => {
   try {
-    const { mandateId, userPrompt, forceBlockedScenario } = req.body;
+    const { mandateId, userPrompt, forceBlockedScenario, proposal: inputProposal } = req.body;
 
     if (!mandateId) {
       return res.status(400).json({ error: "mandateId is required" });
     }
 
+    // Case 1: Specific proposal payload provided (e.g. from Agent Trigger Simulator)
+    if (inputProposal || (req.body.itemName && req.body.amount)) {
+      const targetProposal = inputProposal || {
+        itemName: req.body.itemName,
+        amount: req.body.amount,
+        currency: req.body.currency || "USD",
+        category: req.body.category || req.body.itemCategory,
+        merchant: req.body.merchant,
+        recipient: req.body.recipient,
+        reasoning: req.body.reasoning,
+      };
+
+      const mandate = await prisma.mandate.findUnique({
+        where: { id: mandateId },
+        include: { purchases: true },
+      });
+
+      if (!mandate) {
+        return res.status(404).json({ error: `Mandate ${mandateId} not found` });
+      }
+
+      // Calculate current cumulative spend
+      const currentSpent = mandate.purchases.reduce((acc, p) => {
+        return p.status !== "FAILED" ? acc + p.amount : acc;
+      }, 0);
+
+      const allowedCats =
+        typeof mandate.allowedCategories === "string"
+          ? JSON.parse(mandate.allowedCategories)
+          : mandate.allowedCategories;
+
+      // Strictly validate proposal against mandate constraints
+      const validation = validateProposalAgainstMandate({
+        mandate: {
+          id: mandate.id,
+          title: mandate.title,
+          maxAmount: mandate.maxAmount,
+          currency: mandate.currency,
+          allowedCategories: allowedCats,
+          expiresAt: mandate.expiresAt,
+          status: mandate.status,
+        },
+        proposal: {
+          itemName: targetProposal.itemName || "Unnamed Proposal Item",
+          itemCategory: targetProposal.category || targetProposal.itemCategory || "general",
+          amount: Number(targetProposal.amount),
+          currency: targetProposal.currency || mandate.currency,
+          recipient: targetProposal.recipient || "authorized-recipient@business.internal",
+        },
+        currentSpentAmount: currentSpent,
+      });
+
+      // Save proposal record to database
+      const savedProposal = await prisma.purchaseProposal.create({
+        data: {
+          mandateId: mandate.id,
+          agentModel: "gemini-1.5-pro",
+          itemName: targetProposal.itemName || "Unnamed Proposal Item",
+          itemCategory: targetProposal.category || targetProposal.itemCategory || "general",
+          amount: Number(targetProposal.amount),
+          currency: targetProposal.currency || mandate.currency,
+          recipient: targetProposal.recipient || "authorized-recipient@business.internal",
+          reasoning: targetProposal.reasoning || "Generated under spend mandate",
+          validationStatus: validation.status,
+          violationReason: validation.violationReason || null,
+          validationChecks: JSON.stringify(validation.checks),
+        },
+      });
+
+      // Log tamper-evident audit event
+      await logAuditEvent({
+        mandateId: mandate.id,
+        action: validation.isApproved ? "VALIDATION_PASSED" : "VALIDATION_BLOCKED",
+        actor: "SYSTEM_VALIDATOR",
+        actorModel: "passport-guard-engine",
+        details: {
+          proposalId: savedProposal.id,
+          itemName: savedProposal.itemName,
+          amount: savedProposal.amount,
+          status: validation.status,
+          violationReason: validation.violationReason,
+          checks: validation.checks,
+        },
+      });
+
+      return res.json({
+        proposal: savedProposal,
+        validation,
+      });
+    }
+
+    // Case 2: Standard agent proposal generation from prompt
     const result = await runPurchaseAgent({
       mandateId,
       userPrompt: userPrompt || "Select an appropriate purchase within authorized mandate",
@@ -33,7 +126,7 @@ router.post("/propose", async (req: Request, res: Response) => {
 // POST /api/purchases/execute
 router.post("/execute", async (req: Request, res: Response) => {
   try {
-    const { proposalId } = req.body;
+    const { proposalId, merchantName } = req.body;
 
     if (!proposalId) {
       return res.status(400).json({ error: "proposalId is required" });
@@ -82,6 +175,15 @@ router.post("/execute", async (req: Request, res: Response) => {
     // 2. Capture PayPal Order
     const captured = await capturePayPalOrder(paypalOrder.id);
 
+    // Dynamic merchant resolution
+    const effectiveMerchant =
+      merchantName ||
+      (proposal.itemName.toLowerCase().includes("figma")
+        ? "Figma Inc."
+        : proposal.itemName.toLowerCase().includes("chair")
+        ? "Herman Miller Authorized Dealer"
+        : "Starbucks Digital Rewards Network");
+
     // 3. Save Purchase record
     const purchase = await prisma.purchase.create({
       data: {
@@ -92,7 +194,7 @@ router.post("/execute", async (req: Request, res: Response) => {
         status: "COMPLETED",
         amount: proposal.amount,
         currency: proposal.currency,
-        merchantName: "Starbucks Digital Rewards Network",
+        merchantName: effectiveMerchant,
         payerEmail: "agent-treasury@passport-ai.internal",
         paymentMethod: captured.isSimulated
           ? "PayPal Sandbox Wallet (Simulated Instant)"
@@ -112,6 +214,7 @@ router.post("/execute", async (req: Request, res: Response) => {
         purchaseId: purchase.id,
         orderId: purchase.paypalOrderId,
         captureId: purchase.paypalCaptureId,
+        merchant: effectiveMerchant,
         sellerProtectionStatus: captured.sellerProtectionStatus,
       },
     });
@@ -157,13 +260,13 @@ router.post("/execute", async (req: Request, res: Response) => {
           allowedCategories: proposal.mandate.allowedCategories,
           authorizedAt: proposal.mandate.createdAt.toISOString(),
           expiresAt: proposal.mandate.expiresAt.toISOString(),
-          authorizer: "Human Small Business Owner",
+          authorizer: "Human Account Owner (Spend Mandate)",
         }),
         transactionData: JSON.stringify({
           paypalOrderId: purchase.paypalOrderId,
           captureId: purchase.paypalCaptureId,
           amount: `$${purchase.amount.toFixed(2)} ${purchase.currency}`,
-          merchant: purchase.merchantName,
+          merchant: effectiveMerchant,
           paymentGateway: "PayPal Sandbox API v2",
           sellerProtectionStatus: captured.sellerProtectionStatus,
           settledAt: purchase.completedAt?.toISOString(),
@@ -212,4 +315,3 @@ router.post("/execute", async (req: Request, res: Response) => {
 });
 
 export default router;
-
