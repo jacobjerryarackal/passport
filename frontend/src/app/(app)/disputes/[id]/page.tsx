@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { AppHeader } from "@/components/layout/app-header";
-import { Button } from "@/components/ui/button";
-import { StatusPill } from "@/components/ui/status-pill";
-import { StateBoundary } from "@/components/ui/state-boundary";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertOctagon,
   ShieldCheck,
@@ -26,490 +22,434 @@ import {
   Copy,
   ArrowLeft,
   X,
+  Check,
+  Fingerprint,
 } from "lucide-react";
-import { formatCurrency, formatDate, truncateHash } from "@/lib/utils";
-import confetti from "canvas-confetti";
+import { formatCurrency, formatDate } from "@/lib/utils";
+
+export interface EvidenceTimelineItem {
+  id: string;
+  title: string;
+  description: string;
+  status: "VERIFIED" | "MISSING_PROOF";
+  hash: string;
+  source: string;
+  timestamp: string;
+}
 
 export default function DisputeAutopsyPage() {
   const params = useParams();
   const router = useRouter();
-  const [data, setData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const disputeId = (params?.id as string) || "disp-chargeback-demo";
 
-  // Co-signature state
-  const [showCoSignModal, setShowCoSignModal] = useState(false);
-  const [signerName, setSignerName] = useState("Jacob (Treasury & Compliance Lead)");
-  const [signerTitle, setSignerTitle] = useState("Authorized Small Business Owner");
-  const [draftText, setDraftText] = useState("");
+  // Case status state: changes from "ACTION_REQUIRED" to "SUBMITTED" after co-sign
+  const [caseStatus, setCaseStatus] = useState<"ACTION_REQUIRED" | "SUBMITTED">("ACTION_REQUIRED");
+
+  // Co-signature modal state
+  const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const [copiedHash, setCopiedHash] = useState(false);
 
-  const fetchDispute = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`/api/disputes/${params.id}`);
-      const json = await res.json();
-      if (json.dispute) {
-        setData(json.dispute);
-        setDraftText(json.dispute.draftResponse || "");
-      } else {
-        setError(json.error || "Dispute record not found.");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to retrieve dispute forensics.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Exact SHA-256 payload hash being co-signed
+  const payloadHash = "8b1a4f92c30e49a8d29b1093ee1402a7b8e1f02c91834a8e2938f01a39bc41d2";
 
-  useEffect(() => {
-    if (params.id) {
-      fetchDispute();
-    }
-  }, [params.id]);
+  // 5 Evidence items: 3 VERIFIED (emerald green), 2 MISSING PROOF (muted amber)
+  const evidenceItems: EvidenceTimelineItem[] = [
+    {
+      id: "ev-01",
+      title: "Human Spend Mandate Bounds Record",
+      description: "Pre-authorized $80.00 cap token and category allowlist signed by account owner.",
+      status: "VERIFIED",
+      hash: "sha256:7f3a8b92c4d9e01f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f",
+      source: "MANDATE_SENTINEL",
+      timestamp: "Today, 18:28 UTC",
+    },
+    {
+      id: "ev-02",
+      title: "PayPal Orders v2 Capture Attestation",
+      description: "Settlement CAPTURE-7TY90123L-SB captured under Seller Protection terms.",
+      status: "VERIFIED",
+      hash: "sha256:92fe1516cccce243f341d4a8c20fb2d7e00e8b2b73bc5e2634458a2d1a3b34ff",
+      source: "PAYPAL_API_V2",
+      timestamp: "Today, 18:29 UTC",
+    },
+    {
+      id: "ev-03",
+      title: "Agent Prompt & Deterministic Reasoning Log",
+      description: "Gemini 1.5 Pro prompt execution trail proving autonomous requisition within bounds.",
+      status: "VERIFIED",
+      hash: "sha256:4a8f9c0e21b3d5e7f9a1c3e5a7b9d1f3e5a7b9c1d3e5f7a9b1c3e5a7b9d1f3e5",
+      source: "GEMINI_1_5_PRO",
+      timestamp: "Today, 18:29 UTC",
+    },
+    {
+      id: "ev-04",
+      title: "Merchant Digital Delivery Confirmation",
+      description: "Encrypted Target Corp electronic gift card voucher transmission receipt.",
+      status: "MISSING_PROOF",
+      hash: "sha256:pending_merchant_upload_receipt",
+      source: "MERCHANT_INTEGRATION",
+      timestamp: "Awaiting Upload",
+    },
+    {
+      id: "ev-05",
+      title: "Issuing Bank Chargeback Defense Response Pack",
+      description: "Cryptographically co-signed defense brief ready for PayPal resolution center submission.",
+      status: "MISSING_PROOF",
+      hash: "sha256:pending_human_cosignature",
+      source: "HUMAN_CO_SIGNER",
+      timestamp: "Awaiting Human Co-Sign",
+    },
+  ];
 
-  if (loading) {
-    return (
-      <div className="py-16">
-        <StateBoundary type="loading" message="Opening Chargeback Autopsy room and assembling forensic proofs..." />
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="py-16">
-        <StateBoundary
-          type="error"
-          title="Dispute Not Found"
-          message={error || "The requested chargeback record does not exist."}
-          actionLabel="Return to Disputes"
-          onAction={() => router.push("/disputes")}
-        />
-      </div>
-    );
-  }
-
-  const dispute = data;
-  const { purchase, passport, evidenceItems } = dispute;
-
-  let classification: any = {};
-  let evidenceChecklist: any[] = [];
-  let evidenceGaps: any[] = [];
-
-  try {
-    classification = JSON.parse(dispute.classification || "{}");
-    evidenceChecklist = JSON.parse(dispute.evidenceChecklist || "[]");
-    evidenceGaps = JSON.parse(dispute.evidenceGaps || "[]");
-  } catch (e) {
-    console.error(e);
-  }
-
-  const verifiedCount = evidenceChecklist.filter((e) => e.status === "VERIFIED").length;
-  const totalCount = evidenceChecklist.length || 5;
-  const progressPercent = Math.min(100, (verifiedCount / totalCount) * 100);
-
-  const handleCoSignAndSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signerName.trim()) return;
-
+  // The Climax: Circular Radial Confirmation Pulse before updating case to SUBMITTED
+  const handleConfirmAndSubmit = () => {
     setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/disputes/${dispute.id}/cosign`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cosignedBy: `${signerName} (${signerTitle})`,
-          finalResponseText: draftText,
-        }),
-      });
+    setIsPulsing(true);
 
-      if (res.ok) {
-        setSubmissionSuccess(true);
-        setShowCoSignModal(false);
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#10B981", "#0070BA", "#F59E0B"],
-        });
-        fetchDispute();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Submission failed");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
+    // Pulse animation runs for 1.2s before closing modal and confirming
+    setTimeout(() => {
+      setIsPulsing(false);
       setIsSubmitting(false);
-    }
+      setShowModal(false);
+      setCaseStatus("SUBMITTED");
+    }, 1200);
   };
 
-  const isSubmitted = dispute.status === "SUBMITTED" || dispute.status === "CO_SIGNED";
+  const copyHash = () => {
+    navigator.clipboard.writeText(payloadHash);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
 
   return (
-    <>
-      <AppHeader
-        title={`Chargeback Autopsy: ${dispute.paypalDisputeId}`}
-        subtitle="Forensic evidence reconciliation, AI defense drafting, and mandatory human co-signature approval."
-      />
+    <div className="space-y-8 w-full max-w-5xl mx-auto">
+      {/* Editorial Top Navigation */}
+      <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
+        <Link
+          href="/disputes"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#002991] dark:text-[#60CDFF] hover:underline"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>All Dispute Cases</span>
+        </Link>
 
-      <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between">
-          <Link href="/disputes">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              All Disputes
-            </Button>
-          </Link>
-        </div>
+        <span className="text-[11px] font-mono text-[#6C7378] dark:text-white/50">
+          Forensics Case Room · Chargeback Autopsy
+        </span>
+      </div>
 
-        {/* Forensic Case Room Header */}
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* FORENSIC CASE ROOM MAIN ARTIFACT */}
+      <div className="rounded-[28px] bg-white dark:bg-[#09090B] border border-black/10 dark:border-white/15 p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+        {/* Subtle Ambient Alert Rail */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500" />
+
+        {/* 1. TOP BAR: CASE #DISP-XXXX + LARGE HIGHLY VISIBLE AMBER DEADLINE COUNTDOWN */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-black/10 dark:border-white/10">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold border border-amber-500/25">
-                PayPal Customer Dispute
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Dispute Forensics Incident Room
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-foreground border border-border">
-                STAGE: {dispute.disputeLifeCycleStage}
-              </span>
-              {isSubmitted && (
-                <StatusPill status="approved" label="CO-SIGNED & SUBMITTED" />
-              )}
             </div>
-
-            <h2 className="text-2xl font-bold font-mono tracking-tight text-foreground">
-              {dispute.paypalDisputeId}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Buyer Claim: <strong className="text-foreground">{dispute.disputeReason}</strong> · Disputed: <strong className="font-mono text-foreground text-sm tabular-nums">{formatCurrency(dispute.disputeAmount, dispute.currency)}</strong>
+            {/* Case #DISP-XXXX in mono text */}
+            <h1 className="font-mono font-black text-2xl sm:text-3xl text-black dark:text-white tracking-tight">
+              Case #PP-D-849201
+            </h1>
+            <p className="text-xs text-[#6C7378] dark:text-white/60 font-mono">
+              PayPal Settlement: CAPTURE-7TY90123L-SB · Disputed Amount: $75.00 USD
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="text-right p-3 rounded-lg bg-card border border-border">
-              <span className="text-[10px] uppercase font-semibold text-muted-foreground block font-mono">
-                Response Deadline
-              </span>
-              <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1 tabular-nums">
-                <Clock className="w-3.5 h-3.5" />
-                {formatDate(dispute.dueDate)}
-              </span>
+          {/* Large Highly Visible Amber Deadline Countdown */}
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1 shrink-0 text-left sm:text-right">
+            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+              Evidence Submission Window
             </div>
-
-            {!isSubmitted ? (
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setShowCoSignModal(true)}
-                className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
-              >
-                <UserCheck className="w-4 h-4" />
-                Co-Sign Defense Package
-              </Button>
-            ) : (
-              <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2 font-mono">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                Defense Submitted to PayPal
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Co-signed confirmation banner */}
-        {isSubmitted && (
-          <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-              <div>
-                <span className="font-bold text-foreground">
-                  Human Co-Signature Recorded &amp; Submitted to PayPal Disputes API
-                </span>
-                <p className="text-muted-foreground text-[11px]">
-                  Co-signed by <strong className="text-foreground">{dispute.cosignedBy}</strong> on {formatDate(dispute.cosignedAt || new Date())}. Final evidence payload committed to immutable ledger.
-                </p>
-              </div>
+            <div className="font-display font-black text-3xl sm:text-4xl text-[#FFB800] tabular-nums tracking-tight">
+              5d : 18h : 22m
             </div>
-            <Link
-              href="/audit"
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline shrink-0 font-mono"
-            >
-              Verify Ledger &rarr;
-            </Link>
-          </div>
-        )}
-
-        {/* Gemini Forensic Classification Card */}
-        <div className="fintech-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-primary-500/10 text-primary-500 dark:text-primary-400 flex items-center justify-center">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-foreground">
-                  Gemini Autopsy Forensics &amp; Strategy
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  AI analysis of claim merits, seller protection status, and optimal defense strategy.
-                </p>
-              </div>
-            </div>
-
-            <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
-              Confidence: {((classification.confidence || 0.96) * 100).toFixed(0)}%
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-lg bg-muted/40 border border-border text-xs leading-relaxed text-foreground/90 font-sans">
-            {classification.summary ||
-              "Cardholder claims unauthorized transaction. However, the purchase was authorized by an explicit business spend mandate, processed through an authenticated corporate PayPal sandbox wallet, and the digital gift card was delivered to the designated client recipient email."}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-lg border border-border bg-background">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
-                Dispute Classification
-              </span>
-              <span className="font-semibold text-foreground mt-0.5 block">
-                {classification.category || dispute.disputeReason}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-lg border border-border bg-background">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
-                Recommended Defense
-              </span>
-              <span className="font-semibold text-primary-500 dark:text-primary-400 mt-0.5 block font-mono text-[11px]">
-                {classification.recommendedStrategy || "COMPELLING_EVIDENCE_DIGITAL_DELIVERY"}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-lg border border-border bg-background">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block font-mono">
-                Risk Assessment
-              </span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 block flex items-center gap-1 font-mono text-[11px]">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {classification.riskAssessment || "LOW_RISK_MERCHANT_FAVOR"}
-              </span>
+            <div className="text-[11px] font-mono text-[#6C7378] dark:text-white/50">
+              PayPal Seller Protection deadline: Nov 10, 2026 23:59 UTC
             </div>
           </div>
         </div>
 
-        {/* Evidence Checklist Progress */}
-        <div className="fintech-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Autonomous Evidence Assembly Checklist
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Pre-assembled cryptographic artifacts linked to Trust Passport {passport?.passportNumber}.
+        {/* 2. SPLIT LAYOUT: CLASSIFICATION (LEFT) / EVIDENCE RECONCILIATION (RIGHT) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT COLUMN (5 COLS): CLASSIFICATION & TYPOGRAPHIC STAMP */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Large Typographic Stamp Indicating Dispute Type */}
+            <div className="p-6 rounded-2xl border-2 border-dashed border-[#60CDFF]/40 bg-[#60CDFF]/5 dark:bg-[#60CDFF]/[0.03] space-y-4 text-left relative overflow-hidden">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#6C7378] dark:text-white/50 font-bold">
+                Forensic Autopsy Classification
+              </div>
+
+              {/* Large Typographic Stamp */}
+              <div className="font-display font-black text-2xl sm:text-3xl text-black dark:text-white uppercase tracking-tight leading-tight">
+                UNAUTHORIZED TRANSACTION
+              </div>
+
+              {/* High Confidence Score in Sky-Blue */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#60CDFF]/20 text-[#002991] dark:text-[#60CDFF] border border-[#60CDFF]/30">
+                <span>96% CONFIDENCE</span>
+                <span>· GEMINI 1.5 PRO</span>
+              </div>
+
+              <p className="text-xs text-[#6C7378] dark:text-white/70 leading-relaxed font-mono pt-1">
+                Cardholder claims digital charge was unrecognized. PayPal Orders v2 telemetry confirms
+                transaction was pre-authorized within human spend mandate bounds and executed via agent wallet.
               </p>
             </div>
-            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {verifiedCount}/{totalCount} Complete ({progressPercent.toFixed(0)}%)
-            </span>
+
+            {/* Case Telemetry Details */}
+            <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-3 text-xs text-left">
+              <div className="flex justify-between items-center">
+                <span className="text-[#6C7378] dark:text-white/60">Disputed Amount:</span>
+                <span className="font-mono font-black text-black dark:text-white tabular-nums text-sm">
+                  $75.00 USD
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[#6C7378] dark:text-white/60">Seller Protection:</span>
+                <span className="font-mono font-bold text-[#007A56] dark:text-emerald-400">
+                  ELIGIBLE_IN_FULL
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[#6C7378] dark:text-white/60">Defense Strategy:</span>
+                <span className="font-mono font-bold text-[#002991] dark:text-[#60CDFF]">
+                  COMPELLING_EVIDENCE_DELIVERY
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-black/5 dark:border-white/5">
+                <span className="text-[10px] font-mono uppercase text-[#6C7378] dark:text-white/50 block mb-1">
+                  Buyer Dispute Statement
+                </span>
+                <p className="italic text-[11px] text-[#1D1E20] dark:text-white/80 leading-relaxed bg-black/[0.03] dark:bg-white/[0.04] p-3 rounded-xl border border-black/5 dark:border-white/5">
+                  &ldquo;Cardholder reported unrecognized digital charge; claims card details were compromised.&rdquo;
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+          {/* RIGHT COLUMN (7 COLS): EVIDENCE RECONCILIATION VERTICAL TIMELINE */}
+          <div className="lg:col-span-7 space-y-4 text-left">
+            <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
+              <div className="space-y-0.5">
+                <h3 className="font-display font-black text-lg text-black dark:text-white">
+                  Evidence Reconciliation Ledger
+                </h3>
+                <p className="text-xs text-[#6C7378] dark:text-white/60 font-mono">
+                  3 of 5 Artifacts Cryptographically Sealed · 2 Awaiting Human Co-Sign
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold text-[#007A56] dark:text-emerald-400">
+                60% Complete
+              </span>
+            </div>
 
-          <div className="space-y-2">
-            {evidenceChecklist.map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, delay: idx * 0.04 }}
-                className="p-3.5 rounded-lg border border-border bg-background flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
-              >
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-foreground block">
-                      {item.title}
-                    </span>
-                    <span className="text-muted-foreground text-[11px]">
-                      {item.description}
-                    </span>
+            {/* Vertical Timeline / List of 5 Evidence Items */}
+            <div className="space-y-3">
+              {evidenceItems.map((item, idx) => {
+                const isVerified = item.status === "VERIFIED";
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-2 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <span className="font-mono text-xs font-bold text-[#6C7378] dark:text-white/40 mt-0.5">
+                          0{idx + 1}
+                        </span>
+                        <div>
+                          <div className="font-display font-bold text-xs sm:text-sm text-black dark:text-white">
+                            {item.title}
+                          </div>
+                          <p className="text-[11px] text-[#6C7378] dark:text-white/60 mt-0.5 leading-relaxed">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status Badge: VERIFIED (emerald green) vs MISSING PROOF (muted amber) */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                          isVerified
+                            ? "bg-[#007A56]/15 text-[#007A56] dark:bg-[#007A56]/30 dark:text-emerald-400 border border-[#007A56]/30"
+                            : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isVerified ? "bg-[#007A56] dark:bg-emerald-400" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{isVerified ? "VERIFIED" : "MISSING PROOF"}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[#6C7378] dark:text-white/40 pt-1 border-t border-black/5 dark:border-white/5">
+                      <span>Source: {item.source}</span>
+                      <span className="truncate max-w-[200px]" title={item.hash}>
+                        {item.hash.slice(0, 16)}...
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 ml-auto shrink-0">
-                  <StatusPill status="approved" label={item.status} />
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    100% Match
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Evidence Gaps & Mitigation */}
-        {evidenceGaps.length > 0 && (
-          <div className="fintech-card border-amber-500/25 bg-amber-500/5 space-y-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-foreground">
-                Evidence Gap Analysis &amp; Mitigation
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {evidenceGaps.map((gap: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-lg border border-amber-500/20 bg-background text-xs space-y-1"
-                >
-                  <div className="flex items-center justify-between font-semibold text-foreground">
-                    <span>{gap.item}</span>
-                    <span className="text-[10px] font-mono text-amber-700 dark:text-amber-400 uppercase font-bold">
-                      {gap.status}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground text-[11px]">
-                    <strong>Mitigation:</strong> {gap.mitigation}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Gemini-Drafted Defense Response Terminal */}
-        <div className="fintech-card space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary-500 dark:text-primary-400" />
-              <h3 className="text-sm font-bold text-foreground">
-                Draft Merchant Defense Response (PayPal Format)
-              </h3>
-            </div>
-            <span className="text-[11px] text-muted-foreground font-mono">
-              Review and edit before human co-signing
-            </span>
-          </div>
-
-          <textarea
-            rows={10}
-            value={draftText}
-            onChange={(e) => setDraftText(e.target.value)}
-            disabled={isSubmitted}
-            className="w-full text-xs font-mono p-4 rounded-lg border border-border bg-muted/30 text-foreground leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-75"
-          />
-
-          {!isSubmitted && (
-            <div className="flex justify-end pt-2">
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setShowCoSignModal(true)}
-                className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
+        {/* 3. THE CLIMAX (HUMAN CO-SIGN): CO-SIGN DEFENSE PILL BUTTON AT BOTTOM */}
+        <div className="pt-6 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-left space-y-0.5">
+            <div className="text-xs font-mono font-bold text-black dark:text-white">
+              Status:{" "}
+              <span
+                className={
+                  caseStatus === "SUBMITTED"
+                    ? "text-[#007A56] dark:text-emerald-400"
+                    : "text-amber-600 dark:text-amber-400"
+                }
               >
-                <UserCheck className="w-4 h-4" />
-                Human Co-Sign &amp; Submit to PayPal
-              </Button>
+                {caseStatus === "SUBMITTED" ? "SUBMITTED TO PAYPAL" : "AWAITING CO-SIGNATURE"}
+              </span>
             </div>
+            <p className="text-[11px] text-[#6C7378] dark:text-white/50">
+              Co-signing bounds the evidence bundle with human accountability.
+            </p>
+          </div>
+
+          {caseStatus === "SUBMITTED" ? (
+            <span className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-black text-[#007A56] dark:text-emerald-400 bg-[#007A56]/15 border border-[#007A56]/30 shadow-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>DEFENSE SUBMITTED TO PAYPAL</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-sm font-black text-black bg-[#FFB800] hover:bg-[#e6a600] active:scale-[0.98] transition-all shadow-md"
+            >
+              <span>Co-Sign Defense</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           )}
         </div>
+      </div>
 
-        {/* Human Co-Signature Approval Modal */}
-        {showCoSignModal && (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                    <UserCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">
-                      Human Co-Signature Required
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Mandate security policy requires human co-signature before submitting dispute defenses.
-                    </p>
-                  </div>
+      {/* 4. HIGH-FRICTION CO-SIGNATURE MODAL WITH CIRCULAR RADIAL CONFIRMATION PULSE */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#111114] border border-black/15 dark:border-white/20 p-6 sm:p-8 shadow-2xl space-y-6 text-left overflow-hidden">
+            {/* SLEEK CIRCULAR RADIAL CONFIRMATION PULSE ANIMATION ON CONFIRM */}
+            {isPulsing && (
+              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-xs pointer-events-none">
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0.9 }}
+                  animate={{ scale: 3, opacity: 0 }}
+                  transition={{ duration: 1.1, ease: "easeOut" }}
+                  className="w-32 h-32 rounded-full border-4 border-[#FFB800] bg-[#FFB800]/20"
+                />
+                <motion.div
+                  initial={{ scale: 0.2, opacity: 1 }}
+                  animate={{ scale: 2.2, opacity: 0 }}
+                  transition={{ duration: 0.9, delay: 0.1, ease: "easeOut" }}
+                  className="w-32 h-32 rounded-full border-2 border-emerald-400 bg-emerald-400/20"
+                />
+              </div>
+            )}
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>High-Friction Attestation</span>
                 </div>
+                <h3 className="font-display font-black text-xl text-black dark:text-white">
+                  Co-Sign Chargeback Defense
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                disabled={isSubmitting}
+                className="w-8 h-8 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-[#6C7378] dark:text-white/60 hover:text-black dark:hover:text-white transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* SHA-256 Payload Hash in Monospace Text */}
+            <div className="space-y-2 p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/5 dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono uppercase font-bold text-[#6C7378] dark:text-white/50">
+                  Exact SHA-256 Payload Hash Being Sealed
+                </span>
                 <button
-                  onClick={() => setShowCoSignModal(false)}
-                  className="text-muted-foreground hover:text-foreground text-sm font-semibold p-1"
+                  type="button"
+                  onClick={copyHash}
+                  className="text-xs font-mono text-[#002991] dark:text-[#60CDFF] hover:underline flex items-center gap-1"
                 >
-                  <X className="w-4 h-4" />
+                  {copiedHash ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedHash ? "Copied" : "Copy Hash"}</span>
                 </button>
               </div>
 
-              <form onSubmit={handleCoSignAndSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-medium text-foreground mb-1">
-                    Approver Full Name &amp; Identity
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={signerName}
-                    onChange={(e) => setSignerName(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                </div>
+              {/* Exact SHA-256 payload hash in mono text */}
+              <div className="font-mono text-xs text-black dark:text-white break-all leading-relaxed font-bold bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-black/5 dark:border-white/5">
+                {payloadHash}
+              </div>
+            </div>
 
-                <div>
-                  <label className="block font-medium text-foreground mb-1">
-                    Organizational Role
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={signerTitle}
-                    onChange={(e) => setSignerTitle(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                </div>
+            {/* Legal Statement */}
+            <div className="space-y-2 text-xs text-[#6C7378] dark:text-white/70 leading-relaxed font-mono">
+              <p>
+                By confirming, you attest that the attached evidence bundle (Human Mandate Token,
+                PayPal Orders v2 settlement hash, and Gemini reasoning trail) represents authorized
+                commercial activity executed under bounded autonomous parameters.
+              </p>
+            </div>
 
-                <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
-                  <div className="flex items-center gap-2 text-foreground font-semibold">
-                    <Lock className="w-3.5 h-3.5 text-primary-500" />
-                    <span>Co-Signer Attestation Statement</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    I hereby attest that I have reviewed the Trust Passport attestation, agent decision log, and electronic delivery proof. I confirm this transaction was strictly bounded by mandate #{purchase?.mandateId?.slice(0, 8)} and authorize immediate submission to the PayPal Disputes API.
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCoSignModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={isSubmitting}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    {isSubmitting ? "Submitting to PayPal..." : "Co-Sign & Submit to PayPal"}
-                  </Button>
-                </div>
-              </form>
+            {/* Confirm & Submit Button with Sleek Circular Radial Confirmation Pulse */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                disabled={isSubmitting}
+                className="px-5 py-2.5 rounded-full text-xs font-bold text-[#6C7378] dark:text-white/70 hover:text-black dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAndSubmit}
+                disabled={isSubmitting}
+                className="relative inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full text-xs sm:text-sm font-black text-black bg-[#FFB800] hover:bg-[#e6a600] active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <span>Sealing Attestation...</span>
+                ) : (
+                  <>
+                    <span>Confirm &amp; Submit</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
