@@ -473,7 +473,7 @@ export function DashboardClient({
       </div>
 
       {/* 4. BOTTOM: FULL-WIDTH CRYPTOGRAPHIC AUDIT STREAM (MERKLE CHAIN) */}
-      <div className="space-y-4 pt-6 border-t border-black/10 dark:border-white/10">
+      <div className="space-y-4 pt-6 border-t border-black/10 dark:border-white/10 w-full max-w-full overflow-hidden">
         <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#007A56] dark:bg-emerald-400 animate-pulse" />
@@ -494,47 +494,45 @@ export function DashboardClient({
           </Link>
         </div>
 
-        {/* Dense Audit List with Hairline Bottom Borders & Mono Hash Links */}
-        <div className="divide-y divide-black/10 dark:divide-white/10">
+        {/* Clean Stacked List: Left = Event Type + Truncated JSON Payload, Right = Hash + Timestamp */}
+        <div className="divide-y divide-black/10 dark:divide-white/10 w-full max-w-full overflow-hidden">
           {auditLogs.map((log) => (
             <div
               key={log.id}
-              className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors px-1"
+              className="py-3 px-2 flex items-center justify-between gap-4 text-xs hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors w-full max-w-full overflow-hidden"
             >
-              {/* Event Metadata */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-[11px] font-bold text-black dark:text-white">
-                    {log.action}
+              {/* Left Side: Event Type & Truncated JSON Payload */}
+              <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                <span className="shrink-0 font-mono text-[11px] font-bold text-black dark:text-white px-2 py-0.5 rounded bg-black/[0.05] dark:bg-white/10 border border-black/5 dark:border-white/10">
+                  {log.action}
+                </span>
+                {log.actorModel && (
+                  <span className="hidden md:inline-block shrink-0 text-[10px] font-mono text-[#002991] dark:text-[#60CDFF]">
+                    {log.actorModel}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/10 font-mono text-[#6C7378] dark:text-white/70">
-                    {log.actor}
-                  </span>
-                  {log.actorModel && (
-                    <span className="text-[10px] font-mono text-[#002991] dark:text-[#60CDFF]">
-                      {log.actorModel}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-[#6C7378] dark:text-white/60 line-clamp-1">
+                )}
+                <span
+                  className="truncate text-[11px] text-[#6C7378] dark:text-white/60 font-mono min-w-0 flex-1"
+                  title={log.details}
+                >
                   {log.details}
-                </p>
+                </span>
               </div>
 
-              {/* Merkle Hashes & Timestamp */}
-              <div className="flex items-center gap-4 text-right shrink-0">
-                <div className="font-mono text-[11px] flex items-center gap-2">
-                  <span className="text-[#6C7378] dark:text-white/50">hash:</span>
+              {/* Right Side: Hash & Timestamp */}
+              <div className="shrink-0 flex items-center gap-4 text-right font-mono text-[11px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#6C7378] dark:text-white/40">hash:</span>
                   <Link
                     href="/audit"
                     className="text-[#002991] dark:text-[#60CDFF] hover:underline font-bold"
                     title={`Event Hash: ${log.eventHash}`}
                   >
-                    {log.eventHash.slice(0, 10)}...{log.eventHash.slice(-6)}
+                    {log.eventHash.slice(0, 8)}...{log.eventHash.slice(-4)}
                   </Link>
                 </div>
 
-                <span className="text-[11px] text-[#6C7378] dark:text-white/50 font-mono tabular-nums whitespace-nowrap">
+                <span className="text-[#6C7378] dark:text-white/50 tabular-nums whitespace-nowrap">
                   {log.timestamp}
                 </span>
               </div>
