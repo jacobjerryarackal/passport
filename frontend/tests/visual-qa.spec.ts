@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 const ROUTES = [
+  { path: "/blank", name: "blank-internal" },
   { path: "/", name: "landing-page" },
   { path: "/dashboard", name: "dashboard" },
   { path: "/mandates", name: "mandates" },

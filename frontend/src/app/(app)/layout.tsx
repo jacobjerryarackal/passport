@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/layout/app-sidebar";
+import { GlobalNavbar } from "@/components/layout/global-navbar";
 
 export default function AppLayout({
   children,
@@ -6,13 +6,14 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-background w-full overflow-x-hidden">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
-        <main className="flex-1 p-3.5 sm:p-6 max-w-7xl w-full mx-auto space-y-6 min-w-0">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-screen bg-[#F7F5F2] dark:bg-[#09090B] text-[#1D1E20] dark:text-[#FAFAFA] font-sans antialiased selection:bg-[#60CDFF] selection:text-black transition-colors duration-150 flex flex-col">
+      {/* Floating Global Navbar */}
+      <GlobalNavbar />
+
+      {/* Main Internal Content Area */}
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20">
+        {children}
+      </main>
     </div>
   );
 }
