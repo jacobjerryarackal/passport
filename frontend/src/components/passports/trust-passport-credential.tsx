@@ -277,7 +277,7 @@ export function TrustPassportCredential({
                     Human Authorization Signature
                   </span>
                   <div className="font-medium text-foreground">
-                    {authData.authorizer || "Account Owner (Jacob)"}
+                    {authData.authorizer || "Account Owner (Authorized)"}
                   </div>
                   <div className="text-[11px] text-muted-foreground font-mono">
                     Signed at {formatDate(authData.approvedAt || passport.issuedAt)}

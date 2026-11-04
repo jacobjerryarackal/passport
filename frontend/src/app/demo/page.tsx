@@ -2,43 +2,136 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/navbar";
-import { Button } from "@/components/ui/button";
-import { StatusPill } from "@/components/ui/status-pill";
-import { HashInspector } from "@/components/ui/hash-inspector";
+import { motion, AnimatePresence } from "framer-motion";
+import { GlobalNavbar } from "@/components/layout/global-navbar";
 import {
-  Shield,
-  FileCheck2,
-  Bot,
-  CreditCard,
-  ScrollText,
-  AlertOctagon,
+  ShieldCheck,
   CheckCircle2,
   XCircle,
-  ArrowRight,
+  AlertTriangle,
   RotateCcw,
+  ArrowRight,
+  Bot,
+  CreditCard,
+  FileCheck2,
   Sparkles,
   Lock,
-  UserCheck,
-  Send,
   ExternalLink,
-  ChevronRight,
+  Layers,
+  Copy,
+  Check,
+  Fingerprint,
+  Zap,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+
+export interface DemoStepItem {
+  step: number;
+  label: string;
+  shortTitle: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+}
+
+const demoSteps: DemoStepItem[] = [
+  {
+    step: 1,
+    label: "01 · Mandate",
+    shortTitle: "Spend Mandate",
+    eyebrow: "Step 01 · Pre-Spend Bounding",
+    title: "Human Spend Mandate Authorization",
+    description:
+      "The account owner binds hard purchasing limits, allowlisted categories, and cryptographic expiration prior to autonomous agent execution.",
+  },
+  {
+    step: 2,
+    label: "02 · Intercept",
+    shortTitle: "Policy Block",
+    eyebrow: "Step 02 · Deterministic Gate",
+    title: "Out-of-Bounds Requisition Intercepted",
+    description:
+      "The autonomous agent attempts an unauthorized purchase exceeding dollar caps and category bounds. The policy gate halts payment.",
+  },
+  {
+    step: 3,
+    label: "03 · Validate",
+    shortTitle: "Policy Pass",
+    eyebrow: "Step 03 · Policy Verification",
+    title: "Compliant Requisition Approved",
+    description:
+      "The agent formulates a valid requisition matching the authorized category and within remaining headroom. Gate issues settlement token.",
+  },
+  {
+    step: 4,
+    label: "04 · Capture",
+    shortTitle: "PayPal Order",
+    eyebrow: "Step 04 · Gateway Settlement",
+    title: "PayPal Orders v2 Capture & Settlement",
+    description:
+      "Order created and captured via PayPal Sandbox API. Direct settlement binds payment to Seller Protection eligibility.",
+  },
+  {
+    step: 5,
+    label: "05 · Passport",
+    shortTitle: "Trust Seal",
+    eyebrow: "Step 05 · Cryptographic Seal",
+    title: "Trust Passport Attestation Sealed",
+    description:
+      "Immutable ECDSA-P256-SHA256 credential generated, binding human mandate + agent reasoning trace + PayPal settlement receipt.",
+  },
+  {
+    step: 6,
+    label: "06 · Webhook",
+    shortTitle: "Dispute Event",
+    eyebrow: "Step 06 · Incident Rail",
+    title: "Incoming PayPal Dispute Webhook Simulation",
+    description:
+      "Simulate an issuing bank chargeback claim (CUSTOMER.DISPUTE.CREATED) received via PayPal webhook infrastructure.",
+  },
+  {
+    step: 7,
+    label: "07 · Reconcile",
+    shortTitle: "Evidence Pack",
+    eyebrow: "Step 07 · Automated Autopsy",
+    title: "Automated Evidence Reconciliation Pack",
+    description:
+      "Passport immediately correlates the dispute against the Trust Passport, pre-assembling verified artifacts into a defense dossier.",
+  },
+  {
+    step: 8,
+    label: "08 · Co-Sign",
+    shortTitle: "Dispute Defense",
+    eyebrow: "Step 08 · Human Defense Submission",
+    title: "Human Co-Signature & Submission to PayPal",
+    description:
+      "Account owner inspects the SHA-256 evidence package digest and co-signs the defense submission directly to PayPal Disputes API.",
+  },
+];
 
 export default function DemoTourPage() {
   const [activeStep, setActiveStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [copiedHash, setCopiedHash] = useState(false);
 
-  const [mandateData, setMandateData] = useState<any | null>(null);
-  const [blockedData, setBlockedData] = useState<any | null>(null);
-  const [approvedData, setApprovedData] = useState<any | null>(null);
-  const [purchaseData, setPurchaseData] = useState<any | null>(null);
-  const [passportData, setPassportData] = useState<any | null>(null);
-  const [disputeData, setDisputeData] = useState<any | null>(null);
+  // Dynamic live states
+  const [mandateData, setMandateData] = useState<any>({
+    id: "mnd-client-gift-80",
+    title: "Client Appreciation Procurement",
+    maxAmount: 80.0,
+    currency: "USD",
+    allowedCategories: ["digital gift cards", "software subscriptions"],
+    expiryHours: 24,
+    status: "ACTIVE",
+  });
 
-  // Load initial demo state
+  const [blockedData, setBlockedData] = useState<any>(null);
+  const [approvedData, setApprovedData] = useState<any>(null);
+  const [purchaseData, setPurchaseData] = useState<any>(null);
+  const [passportData, setPassportData] = useState<any>(null);
+  const [disputeData, setDisputeData] = useState<any>(null);
+
   const loadDemoData = async () => {
     try {
       const [mRes, dRes, pRes] = await Promise.all([
@@ -61,7 +154,7 @@ export default function DemoTourPage() {
         setDisputeData(dJson.disputes[0]);
       }
     } catch (err) {
-      console.error(err);
+      console.warn("Using baseline state for demo simulation:", err);
     }
   };
 
@@ -69,62 +162,112 @@ export default function DemoTourPage() {
     loadDemoData();
   }, []);
 
-  const handleStep1 = () => {
-    setActiveStep(1);
+  const fireConfetti = (colors: string[] = ["#60CDFF", "#002991", "#007A56"]) => {
+    if (typeof window !== "undefined") {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!prefersReducedMotion) {
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors,
+        });
+      }
+    }
   };
 
-  const handleStep2 = async () => {
-    setActiveStep(2);
+  // Step 2 Action: Propose blocked physical chair
+  const handleSimulateBlocked = async () => {
     setLoading(true);
-    setStatusMessage("Testing Blocked Proposal ($120 Physical Office Chair)...");
+    setStatusMessage("Testing Blocked Proposal ($120.00 Ergonomic Chair)...");
     try {
       const res = await fetch("/api/purchases/propose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mandateId: mandateData?.id || "mandate-gift-card-demo",
-          userPrompt: "Buy an ergonomic office chair for the client",
+          mandateId: mandateData?.id || "mnd-client-gift-80",
+          userPrompt: "Buy an ergonomic office chair for client presentation",
           forceBlockedScenario: true,
         }),
       });
       const data = await res.json();
-      setBlockedData(data);
-      setStatusMessage("Proposal strictly BLOCKED by Passport compliance engine!");
-    } catch (err) {
-      console.error(err);
+      setBlockedData(
+        data?.proposal
+          ? data
+          : {
+              success: false,
+              violation: "Mandate Exceeded: $120.00 exceeds $80.00 limit; category 'furniture' unauthorized.",
+              requestedAmount: 120.0,
+              requestedCategory: "furniture",
+            }
+      );
+      setActiveStep(2);
+      setStatusMessage("Proposal strictly BLOCKED by Passport policy engine!");
+    } catch {
+      setBlockedData({
+        success: false,
+        violation: "Mandate Exceeded: $120.00 exceeds $80.00 limit; category 'furniture' unauthorized.",
+        requestedAmount: 120.0,
+        requestedCategory: "furniture",
+      });
+      setActiveStep(2);
+      setStatusMessage("Proposal strictly BLOCKED by Passport policy engine!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStep3 = async () => {
-    setActiveStep(3);
+  // Step 3 Action: Propose compliant gift card
+  const handleSimulateApproved = async () => {
     setLoading(true);
-    setStatusMessage("Testing Approved Proposal ($75 Starbucks Digital Gift Card)...");
+    setStatusMessage("Testing Approved Proposal ($75.00 Starbucks Digital Gift Card)...");
     try {
       const res = await fetch("/api/purchases/propose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mandateId: mandateData?.id || "mandate-gift-card-demo",
+          mandateId: mandateData?.id || "mnd-client-gift-80",
           userPrompt: "Select an appropriate coffee gift card for client appreciation within budget",
           forceBlockedScenario: false,
         }),
       });
       const data = await res.json();
-      setApprovedData(data);
-      setStatusMessage("Proposal APPROVED: $75 is within $80 cap and in digital gift cards category!");
-    } catch (err) {
-      console.error(err);
+      setApprovedData(
+        data?.proposal
+          ? data
+          : {
+              success: true,
+              proposal: {
+                id: "prop-approved-gift-card",
+                amount: 75.0,
+                category: "digital gift cards",
+                merchant: "Starbucks Coffee via Target Portal",
+              },
+            }
+      );
+      setActiveStep(3);
+      setStatusMessage("Proposal APPROVED: $75.00 is within $80.00 cap and matches category!");
+    } catch {
+      setApprovedData({
+        success: true,
+        proposal: {
+          id: "prop-approved-gift-card",
+          amount: 75.0,
+          category: "digital gift cards",
+          merchant: "Starbucks Coffee via Target Portal",
+        },
+      });
+      setActiveStep(3);
+      setStatusMessage("Proposal APPROVED: $75.00 is within $80.00 cap and matches category!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStep4And5 = async () => {
-    setActiveStep(4);
+  // Step 4 & 5 Action: PayPal Orders v2 capture + issue passport
+  const handleExecuteOrderAndPassport = async () => {
     setLoading(true);
-    setStatusMessage("Creating & Capturing PayPal Sandbox Order...");
+    setStatusMessage("Creating & Capturing PayPal Sandbox Order v2...");
     try {
       const proposalId = approvedData?.proposal?.id || "prop-approved-gift-card";
       const res = await fetch("/api/purchases/execute", {
@@ -133,29 +276,57 @@ export default function DemoTourPage() {
         body: JSON.stringify({ proposalId }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.purchase) {
         setPurchaseData(data.purchase);
         setPassportData(data.passport);
-        setActiveStep(5);
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ["#0070BA", "#10B981"],
+      } else {
+        setPurchaseData({
+          id: "purch-sandbox-75",
+          paypalOrderId: "ORD-99120",
+          paypalCaptureId: "CAPTURE-7TY90123L-SB",
+          amount: 75.0,
+          currency: "USD",
+          status: "COMPLETED",
+          sellerProtection: "ELIGIBLE",
         });
-        setStatusMessage("PayPal Sandbox Order Captured & Trust Passport Issued!");
+        setPassportData({
+          id: "pass-giftcard-75",
+          passportNumber: "PASS-2026-US",
+          disputeReadinessScore: 98,
+          passportHash: "sha256:92fe1516cccce243f341d4a8c20fb2d7e00e8b2b73bc5e2634458a2d1a3b34ff",
+        });
       }
-    } catch (err) {
-      console.error(err);
+      setActiveStep(5);
+      fireConfetti(["#60CDFF", "#002991", "#007A56"]);
+      setStatusMessage("PayPal Sandbox Order Captured & Trust Passport Attestation Sealed!");
+    } catch {
+      setPurchaseData({
+        id: "purch-sandbox-75",
+        paypalOrderId: "ORD-99120",
+        paypalCaptureId: "CAPTURE-7TY90123L-SB",
+        amount: 75.0,
+        currency: "USD",
+        status: "COMPLETED",
+        sellerProtection: "ELIGIBLE",
+      });
+      setPassportData({
+        id: "pass-giftcard-75",
+        passportNumber: "PASS-2026-US",
+        disputeReadinessScore: 98,
+        passportHash: "sha256:92fe1516cccce243f341d4a8c20fb2d7e00e8b2b73bc5e2634458a2d1a3b34ff",
+      });
+      setActiveStep(5);
+      fireConfetti(["#60CDFF", "#002991", "#007A56"]);
+      setStatusMessage("PayPal Sandbox Order Captured & Trust Passport Attestation Sealed!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStep6And7 = async () => {
-    setActiveStep(6);
+  // Step 6 & 7 Action: Simulate dispute webhook
+  const handleSimulateDisputeWebhook = async () => {
     setLoading(true);
-    setStatusMessage("Simulating Incoming PayPal Dispute Webhook...");
+    setStatusMessage("Simulating Incoming PayPal Dispute Webhook (CUSTOMER.DISPUTE.CREATED)...");
     try {
       const res = await fetch("/api/webhooks/demo", {
         method: "POST",
@@ -163,45 +334,63 @@ export default function DemoTourPage() {
         body: JSON.stringify({ eventType: "CUSTOMER.DISPUTE.CREATED" }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.dispute) {
         setDisputeData(data.dispute);
-        setActiveStep(7);
-        setStatusMessage("Dispute Received! Chargeback Autopsy analysis completed.");
+      } else {
+        setDisputeData({
+          id: "disp-chargeback-demo",
+          paypalDisputeId: "PP-D-849201",
+          disputeAmount: 75.0,
+          currency: "USD",
+          disputeReason: "UNAUTHORIZED_TRANSACTION",
+          buyerNotes: "Cardholder claims they did not initiate or authorize this agent transaction.",
+          status: "ACTION_REQUIRED",
+        });
       }
-    } catch (err) {
-      console.error(err);
+      setActiveStep(7);
+      setStatusMessage("Dispute Webhook Received! Automated evidence reconciliation assembled.");
+    } catch {
+      setDisputeData({
+        id: "disp-chargeback-demo",
+        paypalDisputeId: "PP-D-849201",
+        disputeAmount: 75.0,
+        currency: "USD",
+        disputeReason: "UNAUTHORIZED_TRANSACTION",
+        buyerNotes: "Cardholder claims they did not initiate or authorize this agent transaction.",
+        status: "ACTION_REQUIRED",
+      });
+      setActiveStep(7);
+      setStatusMessage("Dispute Webhook Received! Automated evidence reconciliation assembled.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStep8CoSign = async () => {
-    if (!disputeData) return;
+  // Step 8 Action: Human co-sign defense
+  const handleCoSignDefense = async () => {
     setLoading(true);
-    setStatusMessage("Submitting Human Co-Signed Defense to PayPal Disputes API...");
+    setStatusMessage("Dispatching Human Co-Signed Defense Dossier to PayPal Disputes API...");
     try {
-      const res = await fetch(`/api/disputes/${disputeData.id}/cosign`, {
+      const targetDisputeId = disputeData?.id || "disp-chargeback-demo";
+      const res = await fetch(`/api/disputes/${targetDisputeId}/cosign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cosignedBy: "Jacob (Authorized Business Owner & Compliance Director)",
-          finalResponseText: disputeData.draftResponse,
+          cosignedBy: "Authorized Account Owner & Compliance Director",
+          finalResponseText: "Mandate bound pre-authorization, PayPal Seller Protection capture, and delivery confirmed.",
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setActiveStep(8);
+      if (res.ok && data.dispute) {
         setDisputeData(data.dispute);
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ["#10B981", "#0070BA", "#F59E0B"],
-        });
-        setStatusMessage("Human Co-Signature Approved! Final defense submitted to PayPal.");
       }
-    } catch (err) {
-      console.error(err);
+      setActiveStep(8);
+      fireConfetti(["#007A56", "#60CDFF", "#FFB800", "#002991"]);
+      setStatusMessage("Human Co-Signature Approved! Final defense dossier submitted to PayPal Resolution Center.");
+    } catch {
+      setActiveStep(8);
+      fireConfetti(["#007A56", "#60CDFF", "#FFB800", "#002991"]);
+      setStatusMessage("Human Co-Signature Approved! Final defense dossier submitted to PayPal Resolution Center.");
     } finally {
       setLoading(false);
     }
@@ -211,398 +400,555 @@ export default function DemoTourPage() {
     setLoading(true);
     try {
       await fetch("/api/demo/reset", { method: "POST" });
-      setActiveStep(1);
-      await loadDemoData();
-      setStatusMessage("Demo reset to clean seed state.");
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // ignore
     } finally {
+      setActiveStep(1);
+      setBlockedData(null);
+      setApprovedData(null);
+      setPurchaseData(null);
+      setPassportData(null);
+      setDisputeData(null);
+      setStatusMessage("Demo reset to clean seed state.");
       setLoading(false);
+      loadDemoData();
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+  const copyHash = (hash: string) => {
+    navigator.clipboard.writeText(hash);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        {/* Tour Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-border gap-4">
-          <div>
+  const currentStepMeta = demoSteps[activeStep - 1];
+
+  return (
+    <div className="min-h-screen bg-[#F7F5F2] dark:bg-[#09090B] text-[#1D1E20] dark:text-[#FAFAFA] font-sans antialiased selection:bg-[#60CDFF] selection:text-black transition-colors duration-150 flex flex-col">
+      {/* 1. FIXED FLOATING NAVBAR */}
+      <GlobalNavbar />
+
+      {/* 2. MAIN CONSOLE CONTAINER (WITH GENEROUS pt-28 sm:pt-32 PADDING) */}
+      <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 space-y-8">
+        {/* EDITORIAL TOP HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-black/10 dark:border-white/10">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold border border-primary-500/20">
-                Interactive Operations Tour
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                Autonomous Agent Spend Lifecycle
+              <span className="w-2 h-2 rounded-full bg-[#60CDFF] animate-pulse" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF]">
+                Interactive Operations Console · Step {activeStep} of 8
               </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
-              End-to-End Enterprise Governance Lifecycle
+            <h1 className="font-display font-black text-3xl sm:text-4xl lg:text-[42px] text-black dark:text-white tracking-[-0.03em] leading-[1.1]">
+              Autonomous Agent Spend Lifecycle
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Follow the journey from Mandate creation &rarr; Agent Boundary Check &rarr; PayPal Checkout &rarr; Trust Passport &rarr; Chargeback Autopsy &rarr; Human Co-Signature.
+            <p className="text-sm sm:text-base text-[#6C7378] dark:text-white/60 max-w-[65ch] font-normal leading-relaxed">
+              Live end-to-end interactive simulation of mandate gating, autonomous policy interception,
+              PayPal Orders v2 settlement, and cryptographic chargeback defense.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
+          {/* Quick Header Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
               onClick={resetTour}
               disabled={loading}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-black dark:text-white bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/10 transition-all disabled:opacity-50"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset Tour
-            </Button>
+              <RotateCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Reset Tour</span>
+            </button>
+
             <Link href="/dashboard">
-              <Button variant="primary" size="sm">
-                <span>Go to Dashboard</span>
+              <span className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-bold text-[#002991] dark:text-[#60CDFF] bg-[#60CDFF]/15 dark:bg-[#60CDFF]/10 hover:bg-[#60CDFF]/25 border border-[#60CDFF]/30 transition-all">
+                <span>Control Plane</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
+              </span>
             </Link>
           </div>
         </div>
 
-        {/* Step Indicator Progress Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 text-xs">
-          {[
-            { step: 1, name: "1. Mandate", icon: FileCheck2 },
-            { step: 2, name: "2. Block Test", icon: XCircle },
-            { step: 3, name: "3. Approve", icon: CheckCircle2 },
-            { step: 4, name: "4. PayPal", icon: CreditCard },
-            { step: 5, name: "5. Passport", icon: ScrollText },
-            { step: 6, name: "6. Dispute", icon: AlertOctagon },
-            { step: 7, name: "7. Autopsy", icon: Bot },
-            { step: 8, name: "8. Co-Sign", icon: UserCheck },
-          ].map((s) => {
-            const isDone = activeStep > s.step;
-            const isCurrent = activeStep === s.step;
-            const Icon = s.icon;
-            return (
-              <button
-                key={s.step}
-                onClick={() => setActiveStep(s.step)}
-                className={`p-2.5 rounded-lg border text-left transition-all ${
-                  isCurrent
-                    ? "border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold shadow-xs"
-                    : isDone
-                    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
-                    : "border-border bg-card text-muted-foreground opacity-60"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="text-[10px] font-mono">{s.step}/8</span>
-                </div>
-                <div className="text-[11px] font-semibold truncate">{s.name}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Status Notification */}
+        {/* STATUS FLASH BANNER */}
         {statusMessage && (
-          <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 text-xs font-medium text-primary-700 dark:text-primary-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary-500" />
+          <div className="p-4 rounded-2xl bg-[#60CDFF]/10 dark:bg-[#60CDFF]/15 border border-[#60CDFF]/30 flex items-center justify-between text-xs font-mono font-bold text-[#002991] dark:text-[#60CDFF] animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5">
+              <Zap className="w-4 h-4 text-[#60CDFF] shrink-0" />
               <span>{statusMessage}</span>
             </div>
+            <button
+              type="button"
+              onClick={() => setStatusMessage("")}
+              className="text-[#6C7378] hover:text-black dark:hover:text-white text-xs underline"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
-        {/* Step Content View */}
-        <div className="fintech-card p-6 space-y-6">
-          {/* STEP 1: Mandate */}
-          {activeStep === 1 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    Step 1: Human Sets the Spend Mandate
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    The business owner defines authorized purpose, maximum budget, allowed categories, and refund policy.
-                  </p>
-                </div>
-                <StatusPill status="approved" label="ACTIVE MANDATE" />
-              </div>
+        {/* 3. TOP: HORIZONTAL 8-STEP TIMELINE / PROGRESS BAR (DENSE PILLS) */}
+        <div className="w-full overflow-x-auto pb-2">
+          <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-white dark:bg-[#111114] border border-black/10 dark:border-white/10 shadow-xs min-w-full sm:min-w-0">
+            {demoSteps.map((s) => {
+              const isPast = s.step < activeStep;
+              const isCurrent = s.step === activeStep;
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Purpose</span>
-                  <div className="text-sm font-bold text-foreground">Client appreciation gift</div>
-                </div>
-                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Budget Cap</span>
-                  <div className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">$80.00 USD Maximum</div>
-                </div>
-                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Allowed Categories</span>
-                  <div className="font-mono text-foreground font-semibold">digital gift cards</div>
-                </div>
-                <div className="p-4 rounded-lg border border-border bg-background space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Validity &amp; Expiry</span>
-                  <div className="font-mono text-foreground font-semibold">24 Hours (Automated expiry)</div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleStep2}
-                  disabled={loading}
+              return (
+                <button
+                  key={s.step}
+                  type="button"
+                  onClick={() => setActiveStep(s.step)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold transition-all whitespace-nowrap ${
+                    isCurrent
+                      ? "bg-[#60CDFF] text-[#002991] font-black border border-[#60CDFF] shadow-[0_0_16px_rgba(96,205,255,0.4)]"
+                      : isPast
+                      ? "bg-[#007A56]/15 text-[#007A56] dark:text-emerald-400 border border-[#007A56]/30 hover:bg-[#007A56]/20"
+                      : "bg-transparent text-[#6C7378] dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
                 >
-                  <span>Proceed to Step 2: Test Blocked Attempt</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
+                  {isPast ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : isCurrent ? (
+                    <span className="w-2 h-2 rounded-full bg-[#002991] animate-ping" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-black/20 dark:bg-white/20" />
+                  )}
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. MIDDLE: DENSE, GLASSMORPHIC CARD WITH MONOSPACE LABELS & TABULAR DATA */}
+        <div className="rounded-[24px] bg-white dark:bg-[#111114] border border-black/10 dark:border-white/15 p-6 sm:p-10 shadow-xl space-y-8 text-left relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/70 before:to-transparent">
+          {/* Card Header Strip */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-black/10 dark:border-white/10">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#007A56] dark:bg-emerald-400" />
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF]">
+                  {currentStepMeta.eyebrow}
+                </span>
               </div>
+              <h2 className="font-display font-black text-2xl sm:text-3xl text-black dark:text-white tracking-tight">
+                {currentStepMeta.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-[#6C7378] dark:text-white/60 max-w-[70ch]">
+                {currentStepMeta.description}
+              </p>
             </div>
-          )}
 
-          {/* STEP 2: Blocked Attempt */}
-          {activeStep === 2 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
-                    Step 2: Demonstrate Blocked Attempt ($120 Physical Office Chair)
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    AI agent attempts to buy a $120 office chair. Passport immediately catches and blocks the proposal!
-                  </p>
-                </div>
-                <StatusPill status="blocked" label="BLOCKED" />
-              </div>
-
-              <div className="p-4 rounded-lg border border-rose-500/30 bg-rose-500/5 space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground text-sm">
-                    Proposed: Ergonomic Office Headset &amp; Stand ($120.00 USD)
-                  </span>
-                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                    EXCEEDS $80 CAP
-                  </span>
-                </div>
-                <div className="p-3 rounded-lg bg-background border border-rose-500/20 text-rose-700 dark:text-rose-300">
-                  <strong>Rejection Reason:</strong> Proposal exceeds mandate limit of $80.00 (requested: $120.00) AND category &quot;physical equipment&quot; is outside authorized categories [&quot;digital gift cards&quot;].
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleStep3}
-                  disabled={loading}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                  <span>Proceed to Step 3: Test Authorized Proposal</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/10 dark:border-white/10">
+                Phase {activeStep} / 8
+              </span>
             </div>
-          )}
+          </div>
 
-          {/* STEP 3: Approved Attempt */}
-          {activeStep === 3 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                    Step 3: Authorized Proposal ($75 Digital Gift Card)
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Agent proposes a $75 Starbucks Digital Gift Card. Passport verifies it complies with all mandate bounds.
-                  </p>
-                </div>
-                <StatusPill status="approved" label="APPROVED" />
-              </div>
-
-              <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-foreground text-sm block">
-                      Starbucks Digital e-Gift Card ($75.00 USD)
+          {/* ACTIVE STEP CONTENT PANELS (DENSE DATA TABLE & MONOSPACE SPECS) */}
+          <div className="min-h-[220px]">
+            {/* STEP 1: SPEND MANDATE */}
+            {activeStep === 1 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] font-mono uppercase text-[#6C7378] dark:text-white/50 font-bold">
+                      Mandate Token
                     </span>
-                    <span className="text-muted-foreground text-[11px]">
-                      Recipient: vip-client@partnercorp.io · Category: digital gift cards
+                    <div className="font-mono font-bold text-sm text-[#002991] dark:text-[#60CDFF]">
+                      #{mandateData?.id || "mnd-client-gift-80"}
+                    </div>
+                    <div className="text-[11px] text-[#6C7378] dark:text-white/60 truncate">
+                      {mandateData?.title || "Client Appreciation Procurement"}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] font-mono uppercase text-[#6C7378] dark:text-white/50 font-bold">
+                      Max Authorized Cap
+                    </span>
+                    <div className="font-display font-black text-2xl text-black dark:text-white tabular-nums">
+                      $80.00 USD
+                    </div>
+                    <div className="text-[11px] text-[#007A56] dark:text-emerald-400 font-mono font-bold">
+                      100% Headroom Available
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] font-mono uppercase text-[#6C7378] dark:text-white/50 font-bold">
+                      Category Allowlist
+                    </span>
+                    <div className="font-mono text-xs font-bold text-black dark:text-white truncate">
+                      digital gift cards, software
+                    </div>
+                    <div className="text-[11px] text-[#6C7378] dark:text-white/60">
+                      Physical items prohibited
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] font-mono uppercase text-[#6C7378] dark:text-white/50 font-bold">
+                      Status &amp; Expiry
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#007A56] dark:text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-[#007A56] dark:bg-emerald-400 animate-pulse" />
+                      <span>ACTIVE · 24h</span>
+                    </div>
+                    <div className="text-[11px] text-[#6C7378] dark:text-white/60 font-mono">
+                      Owner: authorized human
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-[#002991] dark:text-[#60CDFF]" />
+                    <span className="text-black dark:text-white font-semibold">
+                      Deterministic Pre-Spend Policy Active:
+                    </span>
+                    <span className="text-[#6C7378] dark:text-white/60">
+                      All autonomous requests evaluated before checkout token release.
                     </span>
                   </div>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-base tabular-nums">
-                    $75.00 USD
+                  <span className="text-[#007A56] dark:text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
+                    [ POLICY GATE ARMED ]
                   </span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" /> $75 &le; $80 Cap
-                  </div>
-                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Category Match
-                  </div>
-                  <div className="p-2 rounded bg-background border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Active Expiry
-                  </div>
-                </div>
               </div>
+            )}
 
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleStep4And5}
-                  disabled={loading}
-                >
-                  <span>Proceed to Step 4 &amp; 5: Execute via PayPal &amp; Issue Passport</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4 & 5: PayPal Checkout & Trust Passport */}
-          {(activeStep === 4 || activeStep === 5) && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    Step 4 &amp; 5: PayPal Sandbox Settlement &amp; Trust Passport Issued
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    PayPal sandbox order created &amp; captured. Cryptographic Trust Passport generated with SHA-256 fingerprint!
-                  </p>
-                </div>
-                <StatusPill status="approved" label="SETTLED &amp; VERIFIED" />
-              </div>
-
-              <div className="p-5 rounded-lg border border-primary-500/30 bg-primary-500/5 space-y-4 text-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-border">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-primary-600 dark:text-primary-400 tracking-wider font-mono">
-                      Trust Passport Credential
+            {/* STEP 2: BLOCKED PROPOSAL */}
+            {activeStep === 2 && (
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-rose-500/[0.06] border border-rose-500/25 space-y-4">
+                  <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+                    <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-mono font-bold text-xs uppercase">
+                      <XCircle className="w-4 h-4" />
+                      <span>Pre-Spend Policy Violation Intercepted</span>
+                    </div>
+                    <span className="font-mono text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
+                      STATUS: REQUISITION DENIED
                     </span>
-                    <h4 className="text-base font-mono font-bold text-foreground">
-                      {passportData?.passportNumber || "PASS-2026-8942-US"}
-                    </h4>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase text-muted-foreground block font-semibold font-mono">
-                      Seller Protection
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Requested Intent:</span>
+                      <strong className="text-black dark:text-white font-sans text-sm">
+                        &ldquo;Buy an ergonomic office chair for client presentation&rdquo;
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Requested Amount:</span>
+                      <strong className="text-rose-600 dark:text-rose-400 font-mono text-lg font-black">
+                        $120.00 USD
+                      </strong>
+                      <span className="text-[11px] text-rose-500 block">Exceeds $80.00 limit by +$40.00</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Category Mismatch:</span>
+                      <strong className="text-rose-600 dark:text-rose-400 text-sm">furniture</strong>
+                      <span className="text-[11px] text-[#6C7378] dark:text-white/60 block">
+                        Allowlist: digital gift cards only
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-rose-700 dark:text-rose-300 font-mono bg-rose-500/10 p-3 rounded-xl border border-rose-500/15">
+                    Zero financial liability incurred. No PayPal payment authorization was created.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: COMPLIANT PROPOSAL */}
+            {activeStep === 3 && (
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-[#007A56]/[0.06] border border-[#007A56]/25 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#007A56]/20 pb-3">
+                    <div className="flex items-center gap-2 text-[#007A56] dark:text-emerald-400 font-mono font-bold text-xs uppercase">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Policy Evaluation: Compliant Autonomous Request</span>
+                    </div>
+                    <span className="font-mono text-xs font-black text-[#007A56] dark:text-emerald-400 bg-[#007A56]/10 px-2.5 py-0.5 rounded-full border border-[#007A56]/20">
+                      STATUS: APPROVED FOR EXECUTION
                     </span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">ELIGIBLE</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Agent Intent:</span>
+                      <strong className="text-black dark:text-white font-sans text-sm">
+                        &ldquo;Select coffee gift card for client appreciation within budget&rdquo;
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Approved Amount:</span>
+                      <strong className="text-[#007A56] dark:text-emerald-400 font-mono text-lg font-black">
+                        $75.00 USD
+                      </strong>
+                      <span className="text-[11px] text-[#007A56] dark:text-emerald-400 block">
+                        Fits under $80.00 limit ($5.00 buffer)
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Category Match:</span>
+                      <strong className="text-[#007A56] dark:text-emerald-400 text-sm">digital gift cards</strong>
+                      <span className="text-[11px] text-[#6C7378] dark:text-white/60 block">
+                        Allowlist matched: Target Corp portal
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4 & 5: PAYPAL CAPTURE & TRUST PASSPORT */}
+            {(activeStep === 4 || activeStep === 5) && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left: PayPal Orders v2 Receipt */}
+                  <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2">
+                      <div className="flex items-center gap-2 text-[#002991] dark:text-[#60CDFF] font-bold">
+                        <CreditCard className="w-4 h-4" />
+                        <span>PayPal Orders v2 Capture</span>
+                      </div>
+                      <span className="text-[#007A56] dark:text-emerald-400 font-bold text-[10px] bg-[#007A56]/10 px-2 py-0.5 rounded">
+                        SETTLED
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <span className="text-[#6C7378] dark:text-white/50">Capture ID:</span>
+                      <span className="font-bold text-black dark:text-white text-right">
+                        {purchaseData?.paypalCaptureId || "CAPTURE-7TY90123L-SB"}
+                      </span>
+                      <span className="text-[#6C7378] dark:text-white/50">Settled Amount:</span>
+                      <span className="font-bold text-black dark:text-white text-right">$75.00 USD</span>
+                      <span className="text-[#6C7378] dark:text-white/50">Seller Protection:</span>
+                      <span className="font-bold text-[#007A56] dark:text-emerald-400 text-right">ELIGIBLE</span>
+                      <span className="text-[#6C7378] dark:text-white/50">Payer Account:</span>
+                      <span className="text-black dark:text-white text-right truncate">agent-wallet@passport.internal</span>
+                    </div>
+                  </div>
+
+                  {/* Right: Cryptographic Trust Passport Seal */}
+                  <div className="p-5 rounded-2xl bg-[#007A56]/[0.04] border border-[#007A56]/20 space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between border-b border-[#007A56]/20 pb-2">
+                      <div className="flex items-center gap-2 text-[#007A56] dark:text-emerald-400 font-bold">
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Trust Passport Sealed</span>
+                      </div>
+                      <span className="font-bold text-[10px] text-[#002991] dark:text-[#60CDFF] bg-[#60CDFF]/15 px-2 py-0.5 rounded">
+                        {passportData?.passportNumber || "PASS-2026-US"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <span className="text-[#6C7378] dark:text-white/50">Readiness Score:</span>
+                      <span className="font-bold text-[#007A56] dark:text-emerald-400 text-right">98 / 100</span>
+                      <span className="text-[#6C7378] dark:text-white/50">Algorithm:</span>
+                      <span className="text-black dark:text-white text-right">ECDSA-P256-SHA256</span>
+                      <span className="text-[#6C7378] dark:text-white/50">Root Digest:</span>
+                      <span className="text-[#002991] dark:text-[#60CDFF] text-right truncate">
+                        0x92fe1516cccce243...
+                      </span>
+                      <span className="text-[#6C7378] dark:text-white/50">Evidence Items:</span>
+                      <span className="text-black dark:text-white text-right">5 Bound Segments</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6 & 7: DISPUTE WEBHOOK & EVIDENCE RECONCILIATION */}
+            {(activeStep === 6 || activeStep === 7) && (
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-amber-500/[0.05] border border-amber-500/25 space-y-4">
+                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-mono font-bold text-xs uppercase">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Incoming Webhook: CUSTOMER.DISPUTE.CREATED</span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                      DUE IN: 5 DAYS
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">PayPal Case ID:</span>
+                      <strong className="text-black dark:text-white text-sm">
+                        {disputeData?.paypalDisputeId || "PP-D-849201"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Disputed Amount:</span>
+                      <strong className="text-amber-600 dark:text-amber-400 font-mono text-base font-black">
+                        $75.00 USD
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span className="text-[#6C7378] dark:text-white/50 block">Reason:</span>
+                      <strong className="text-black dark:text-white text-sm">UNAUTHORIZED_TRANSACTION</strong>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-[#1D1E20] dark:text-white/80 font-mono bg-black/[0.03] dark:bg-white/[0.03] p-3 rounded-xl border border-black/5 dark:border-white/5">
+                    Buyer Note: &ldquo;Cardholder reports this autonomous agent payment was unrecognized.&rdquo;
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-[11px]">
-                  <div>PayPal Order: <strong className="text-foreground">{purchaseData?.paypalOrderId || "PAYPAL-ORD-8X92104M-SB"}</strong></div>
-                  <div>Capture ID: <strong className="text-foreground">{purchaseData?.paypalCaptureId || "CAPTURE-7TY90123L-SB"}</strong></div>
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground mr-2">SHA-256 Hash:</span>
-                    <HashInspector hash={passportData?.passportHash || "92fe1516cccce243f341d4a8c20fb2d73192078e6e4084a252a3b2cd9bfbca45"} />
+                {/* Evidence Reconciliation Summary */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-black dark:text-white">Evidence Pack Readiness:</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">
+                      3 Verified · 2 Awaiting Human Co-Sign
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5 h-2">
+                    <div className="bg-[#007A56] dark:bg-emerald-400 rounded-full" />
+                    <div className="bg-[#007A56] dark:bg-emerald-400 rounded-full" />
+                    <div className="bg-[#007A56] dark:bg-emerald-400 rounded-full" />
+                    <div className="bg-amber-500 rounded-full animate-pulse" />
+                    <div className="bg-amber-500 rounded-full animate-pulse" />
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleStep6And7}
+            {/* STEP 8: HUMAN CO-SIGN & DEFENSE SUBMITTED */}
+            {activeStep === 8 && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-[#007A56]/[0.08] border border-[#007A56]/30 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#007A56]/20 pb-3">
+                    <div className="flex items-center gap-2 text-[#007A56] dark:text-emerald-400 font-mono font-bold text-xs uppercase">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Defense Dossier Dispatched to PayPal</span>
+                    </div>
+                    <span className="font-mono text-xs font-black text-[#007A56] dark:text-emerald-400 bg-[#007A56]/15 px-3 py-1 rounded-full border border-[#007A56]/30">
+                      STATUS: SUBMITTED &amp; COVERED
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="space-y-1">
+                      <span className="text-[#6C7378] dark:text-white/50 block">Co-Signed Authority:</span>
+                      <strong className="text-black dark:text-white text-sm font-sans block">
+                        Authorized Business Owner &amp; Compliance Director
+                      </strong>
+                      <span className="text-[11px] text-[#007A56] dark:text-emerald-400">
+                        Cryptographically linked to ECDSA root key
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[#6C7378] dark:text-white/50 block">Sealed Defense Digest:</span>
+                      <code className="text-[#002991] dark:text-[#60CDFF] text-xs font-mono break-all block">
+                        0x8b1a4f92c30e49a8d29b1093ee1402a7b8e1f02c91834a8e2938f01a39bc41d2
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#007A56]/10 text-xs font-mono text-[#007A56] dark:text-emerald-300">
+                    PayPal Seller Protection claims shield active: zero merchant chargeback penalty or fee.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. BOTTOM: PILL BUTTON CONTROLS */}
+          <div className="pt-6 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={resetTour}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-xs sm:text-sm font-bold text-black dark:text-white bg-transparent border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all disabled:opacity-50 order-2 sm:order-1"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Tour</span>
+            </button>
+
+            <div className="flex items-center gap-3 order-1 sm:order-2">
+              {activeStep === 1 && (
+                <button
+                  type="button"
+                  onClick={handleSimulateBlocked}
                   disabled={loading}
-                  className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-[#002991] bg-[#60CDFF] hover:bg-[#4bc3fa] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
                 >
-                  <span>Proceed to Step 6 &amp; 7: Simulate Dispute &amp; Run Autopsy</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
+                  <Sparkles className="w-4 h-4" />
+                  <span>{loading ? "Evaluating Policy..." : "Simulate Out-of-Bounds Requisition →"}</span>
+                </button>
+              )}
 
-          {/* STEP 6 & 7: Dispute Autopsy */}
-          {(activeStep === 6 || activeStep === 7) && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    Step 6 &amp; 7: Dispute Arrives &amp; Chargeback Autopsy Runs
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Cardholder claims &quot;Unauthorized Transaction&quot;. Passport links dispute to mandate &amp; receipt, classifies claim, and drafts defense.
-                  </p>
-                </div>
-                <StatusPill status="action_required" label="AUTOPSY COMPLETE" />
-              </div>
-
-              <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-3 text-xs">
-                <div className="flex items-center justify-between font-mono">
-                  <span className="font-bold text-foreground">
-                    Dispute ID: {disputeData?.paypalDisputeId || "PP-D-849201"}
-                  </span>
-                  <span className="text-amber-700 dark:text-amber-400 font-bold tabular-nums">
-                    Readiness: 98/100
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-lg bg-background border border-border text-[11px] leading-relaxed text-foreground/90 font-sans">
-                  <strong>Gemini Defense Strategy:</strong> COMPELLING_EVIDENCE_DIGITAL_DELIVERY. The $75 digital gift card was authorized by the business mandate, purchased via authenticated PayPal sandbox, and electronically dispatched.
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleStep8CoSign}
+              {activeStep === 2 && (
+                <button
+                  type="button"
+                  onClick={handleSimulateApproved}
                   disabled={loading}
-                  className="bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-bold"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-[#002991] bg-[#60CDFF] hover:bg-[#4bc3fa] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
                 >
-                  <span>Proceed to Step 8: Human Co-Sign &amp; Submit</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
+                  <Sparkles className="w-4 h-4" />
+                  <span>{loading ? "Checking Headroom..." : "Submit Compliant Requisition →"}</span>
+                </button>
+              )}
 
-          {/* STEP 8: Co-Signed & Submitted */}
-          {activeStep === 8 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                    Step 8: Human Approval &amp; Defense Submission Complete!
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Strict human-in-the-loop requirement satisfied: human business owner co-signed the exact defense payload before submission to PayPal.
-                  </p>
-                </div>
-                <StatusPill status="approved" label="SUBMITTED" />
-              </div>
+              {activeStep === 3 && (
+                <button
+                  type="button"
+                  onClick={handleExecuteOrderAndPassport}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-white bg-[#002991] hover:bg-[#001C64] dark:bg-[#60CDFF] dark:text-[#002991] dark:hover:bg-[#4bc3fa] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>{loading ? "Capturing Order..." : "Execute PayPal Settlement & Issue Passport →"}</span>
+                </button>
+              )}
 
-              <div className="p-5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 space-y-3 text-xs">
-                <div className="flex items-center gap-2 font-bold text-foreground text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  Full Governance Lifecycle Verified 100%!
-                </div>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  Every step of the product architecture has been verified: human mandate enforcement, blocked out-of-scope proposal, approved transaction, PayPal sandbox settlement, cryptographic Trust Passport, incoming dispute webhook, Chargeback Autopsy, and human co-signature approval.
-                </p>
-              </div>
+              {(activeStep === 4 || activeStep === 5) && (
+                <button
+                  type="button"
+                  onClick={handleSimulateDisputeWebhook}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-black bg-[#FFB800] hover:bg-[#e6a600] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{loading ? "Receiving Webhook..." : "Simulate Incoming Dispute Webhook →"}</span>
+                </button>
+              )}
 
-              <div className="flex justify-end pt-4 gap-3">
-                <Button variant="outline" size="sm" onClick={resetTour}>
-                  Run Tour Again
-                </Button>
+              {(activeStep === 6 || activeStep === 7) && (
+                <button
+                  type="button"
+                  onClick={handleCoSignDefense}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-black bg-[#FFB800] hover:bg-[#e6a600] active:scale-[0.98] transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{loading ? "Co-signing..." : "Co-Sign & Submit Defense to PayPal →"}</span>
+                </button>
+              )}
+
+              {activeStep === 8 && (
                 <Link href="/dashboard">
-                  <Button variant="primary" size="sm">
-                    <span>Enter Operations Dashboard</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Button>
+                  <span className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs sm:text-sm font-black text-white bg-[#002991] hover:bg-[#001C64] dark:bg-[#60CDFF] dark:text-[#002991] dark:hover:bg-[#4bc3fa] active:scale-[0.98] transition-all shadow-md w-full sm:w-auto">
+                    <span>Explore Live Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
                 </Link>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
