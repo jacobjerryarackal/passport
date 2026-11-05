@@ -11,7 +11,7 @@ const router = Router();
 router.post("/paypal", async (req: Request, res: Response) => {
   try {
     const body = req.body;
-    const rawBody = typeof body === "string" ? body : JSON.stringify(body);
+    const rawBody = (req as any).rawBody || (typeof body === "string" ? body : JSON.stringify(body));
 
     const transmissionId = (req.headers["paypal-transmission-id"] as string) || "";
     const transmissionTime = (req.headers["paypal-transmission-time"] as string) || "";
@@ -19,7 +19,7 @@ router.post("/paypal", async (req: Request, res: Response) => {
     const authAlgo = (req.headers["paypal-auth-algo"] as string) || "";
     const transmissionSig = (req.headers["paypal-transmission-sig"] as string) || "";
 
-    // Signature verification
+    // Signature verification with raw body for CRC32 check
     const verification = await verifyPayPalWebhookSignature({
       transmissionId,
       transmissionTime,
@@ -27,6 +27,7 @@ router.post("/paypal", async (req: Request, res: Response) => {
       authAlgo,
       transmissionSig,
       webhookId: process.env.PAYPAL_WEBHOOK_ID || "",
+      rawBody,
       webhookEvent: body,
     });
 
@@ -132,16 +133,157 @@ router.post("/demo", async (req: Request, res: Response) => {
   try {
     const { eventType = "CUSTOMER.DISPUTE.CREATED" } = req.body || {};
 
-    const purchase = await prisma.purchase.findFirst({
+    let purchase = await prisma.purchase.findFirst({
       where: { status: { in: ["COMPLETED", "DISPUTED"] } },
       orderBy: { createdAt: "desc" },
       include: { passport: true },
     });
 
     if (!purchase) {
-      return res.status(404).json({ error: "No completed purchase found to attach simulated webhook" });
+      purchase = await prisma.purchase.findFirst({
+        orderBy: { createdAt: "desc" },
+        include: { passport: true },
+      });
     }
 
+    // Auto-seed a verified purchase & passport if the database is newly initialized
+    if (!purchase) {
+      let mandate = await prisma.mandate.findFirst();
+      if (!mandate) {
+        mandate = await prisma.mandate.create({
+          data: {
+            title: "Executive Client Gifting & Travel Mandate",
+            purpose: "Autonomous vendor acquisition and client gifting under policy",
+            maxAmount: 250.0,
+            currency: "USD",
+            allowedCategories: JSON.stringify(["digital gift cards", "office supplies", "software subscriptions"]),
+            expiryHours: 72,
+            expiresAt: new Date(Date.now() + 72 * 3600000),
+            refundPolicy: "14-day standard digital merchant refund warranty",
+            status: "ACTIVE",
+          },
+        });
+      }
+
+      const proposal = await prisma.purchaseProposal.create({
+        data: {
+          mandateId: mandate.id,
+          agentModel: "gemini-1.5-pro",
+          itemName: "Executive Hospitality Welcome Package",
+          itemCategory: "digital gift cards",
+          amount: 75.0,
+          currency: "USD",
+          recipient: "client-relations@acme-corp.partner",
+          reasoning: "Authorized under mandate rules for tier-1 partner onboarding.",
+          validationStatus: "APPROVED",
+          validationChecks: JSON.stringify([
+            { rule: "BUDGET_CAP", passed: true },
+            { rule: "CATEGORY_MATCH", passed: true },
+          ]),
+        },
+      });
+
+      const orderId = `ORD-SIM-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+      const captureId = `CAP-SIM-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+      const createdPurchase = await prisma.purchase.create({
+        data: {
+          mandateId: mandate.id,
+          proposalId: proposal.id,
+          paypalOrderId: orderId,
+          paypalCaptureId: captureId,
+          status: "COMPLETED",
+          amount: 75.0,
+          currency: "USD",
+          merchantName: "Executive Services Group",
+          payerEmail: "autonomous-ops@passport.internal",
+          paymentMethod: "PayPal Sandbox Wallet",
+          completedAt: new Date(),
+        },
+      });
+
+      const passportNumber = `PASS-${new Date().getFullYear()}-${crypto.randomInt(1000, 9999)}-US`;
+      const passportHash = crypto.createHash("sha256").update(createdPurchase.id + orderId).digest("hex");
+      const passport = await prisma.trustPassport.create({
+        data: {
+          passportNumber,
+          purchaseId: createdPurchase.id,
+          mandateId: mandate.id,
+          passportHash,
+          signature: `SIG-${crypto.randomBytes(16).toString("hex")}`,
+          status: "VALID",
+          authorizationData: JSON.stringify({
+            mandateTitle: mandate.title,
+            budgetCap: `$${mandate.maxAmount.toFixed(2)} ${mandate.currency}`,
+            allowedCategories: mandate.allowedCategories,
+          }),
+          transactionData: JSON.stringify({
+            orderId: createdPurchase.paypalOrderId,
+            captureId: createdPurchase.paypalCaptureId,
+            amount: `$${createdPurchase.amount.toFixed(2)}`,
+          }),
+          agentTrailData: JSON.stringify({
+            model: "gemini-1.5-pro",
+            promptTrigger: "Simulated client onboarding requisition",
+          }),
+          refundEligibility: JSON.stringify({
+            eligible: true,
+            policy: "14-day warranty",
+          }),
+          disputeReadinessScore: 98,
+          evidencePack: JSON.stringify([
+            { type: "MANDATE_AUTHORIZATION", status: "VERIFIED" },
+            { type: "PAYPAL_CAPTURE_RECEIPT", status: "VERIFIED" },
+            { type: "AGENT_REASONING_LOG", status: "VERIFIED" },
+          ]),
+          qrCodePayload: `https://passport.internal/verify/${passportNumber}`,
+        },
+      });
+
+      purchase = {
+        ...createdPurchase,
+        passport,
+      } as any;
+    }
+
+    if (!purchase!.passport) {
+      const passportNumber = `PASS-${new Date().getFullYear()}-${crypto.randomInt(1000, 9999)}-US`;
+      const passportHash = crypto.createHash("sha256").update(purchase!.id + purchase!.paypalOrderId).digest("hex");
+      const passport = await prisma.trustPassport.create({
+        data: {
+          passportNumber,
+          purchaseId: purchase!.id,
+          mandateId: purchase!.mandateId,
+          passportHash,
+          signature: `SIG-${crypto.randomBytes(16).toString("hex")}`,
+          status: "VALID",
+          authorizationData: JSON.stringify({
+            orderId: purchase!.paypalOrderId,
+            amount: purchase!.amount,
+          }),
+          transactionData: JSON.stringify({
+            orderId: purchase!.paypalOrderId,
+            captureId: purchase!.paypalCaptureId,
+            amount: `$${purchase!.amount.toFixed(2)}`,
+          }),
+          agentTrailData: JSON.stringify({
+            model: "gemini-1.5-pro",
+          }),
+          refundEligibility: JSON.stringify({
+            eligible: true,
+            policy: "14-day warranty",
+          }),
+          disputeReadinessScore: 95,
+          evidencePack: JSON.stringify([
+            { type: "MANDATE_AUTHORIZATION", status: "VERIFIED" },
+            { type: "PAYPAL_CAPTURE_RECEIPT", status: "VERIFIED" },
+          ]),
+          qrCodePayload: `https://passport.internal/verify/${passportNumber}`,
+        },
+      });
+      purchase!.passport = passport;
+    }
+
+    const validPurchase = purchase!;
     const disputeId = `PP-D-${crypto.randomInt(100000, 999999)}`;
     const eventId = `WH-SIM-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 
@@ -149,14 +291,14 @@ router.post("/demo", async (req: Request, res: Response) => {
       data: {
         paypalEventId: eventId,
         eventType,
-        summary: `Simulated PayPal Webhook: ${eventType} on Order ${purchase.paypalOrderId}`,
+        summary: `Simulated PayPal Webhook: ${eventType} on Order ${validPurchase.paypalOrderId}`,
         payload: JSON.stringify({
           id: eventId,
           event_type: eventType,
           resource: {
             dispute_id: disputeId,
-            seller_transaction_id: purchase.paypalCaptureId || purchase.paypalOrderId,
-            dispute_amount: { currency_code: purchase.currency, value: purchase.amount.toFixed(2) },
+            seller_transaction_id: validPurchase.paypalCaptureId || validPurchase.paypalOrderId,
+            dispute_amount: { currency_code: validPurchase.currency, value: validPurchase.amount.toFixed(2) },
             reason: "UNAUTHORIZED_TRANSACTION",
           },
         }),
@@ -169,25 +311,25 @@ router.post("/demo", async (req: Request, res: Response) => {
     const dispute = await prisma.dispute.create({
       data: {
         paypalDisputeId: disputeId,
-        purchaseId: purchase.id,
-        passportId: purchase.passport?.id || null,
+        purchaseId: validPurchase.id,
+        passportId: validPurchase.passport?.id || null,
         status: "ACTION_REQUIRED",
         disputeReason: "UNAUTHORIZED_TRANSACTION",
-        disputeAmount: purchase.amount,
-        currency: purchase.currency,
+        disputeAmount: validPurchase.amount,
+        currency: validPurchase.currency,
         dueDate: new Date(Date.now() + 7 * 86400000),
         buyerNotes: "Cardholder reported unrecognized digital charge; claims card details were compromised.",
       },
     });
 
     await prisma.purchase.update({
-      where: { id: purchase.id },
+      where: { id: validPurchase.id },
       data: { status: "DISPUTED" },
     });
 
-    if (purchase.passport?.id) {
+    if (validPurchase.passport?.id) {
       await prisma.trustPassport.update({
-        where: { id: purchase.passport.id },
+        where: { id: validPurchase.passport.id },
         data: { status: "DISPUTED" },
       });
     }
@@ -195,7 +337,7 @@ router.post("/demo", async (req: Request, res: Response) => {
     const autopsy = await runDisputeAutopsy(dispute.id);
 
     await logAuditEvent({
-      mandateId: purchase.mandateId,
+      mandateId: validPurchase.mandateId,
       action: "DISPUTE_RECEIVED",
       actor: "PAYPAL_WEBHOOK",
       actorModel: "simulated-webhook-trigger",

@@ -13,16 +13,19 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString("utf8");
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint
 app.get("/health", (_req, res) => {
-  res.json({
-    status: "healthy",
-    service: "Passport AI Core Backend",
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ status: "ok" });
 });
 
 // Mount API routes
