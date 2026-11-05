@@ -17,8 +17,8 @@ export function isGeminiConfigured(): boolean {
 }
 
 // Configurable model IDs
-export const GEMINI_PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-2.5-pro";
-export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
+export const GEMINI_PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-3.1-pro-preview";
+export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.8-flash";
 
 /**
  * Detects whether an error from GoogleGenerativeAI is retryable (429 Rate Limit/Quota or 503 Unavailable)
