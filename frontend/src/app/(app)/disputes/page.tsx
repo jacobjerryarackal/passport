@@ -20,6 +20,7 @@ export interface DisputeRecord {
   verifiedEvidenceCount: number;
   totalEvidenceCount: number;
   status: string;
+  simulated?: boolean;
   dueDate: string;
 }
 
@@ -73,6 +74,7 @@ export default function DisputesListPage() {
               d.evidenceItems?.filter((e: any) => e.status === "VERIFIED" || e.status === "SEALED").length || 3,
             totalEvidenceCount: d.evidenceItems?.length || 5,
             status: d.status || "ACTION_REQUIRED",
+            simulated: Boolean(d.simulated || d.paypalDisputeId?.includes("SIM")),
             dueDate: "Nov 10, 2026 (5d left)",
           }));
           setDisputes(mapped);
@@ -99,19 +101,26 @@ export default function DisputesListPage() {
       {
         headerName: "Case ID",
         field: "paypalDisputeId",
-        minWidth: 160,
-        flex: 1.2,
+        minWidth: 180,
+        flex: 1.3,
         cellRenderer: (params: any) => {
           const dispute = params.data as DisputeRecord;
           if (!dispute) return null;
           return (
-            <Link
-              href={`/disputes/${dispute.id}`}
-              className="hover:underline flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-amber-600 dark:text-amber-400"
-            >
-              <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
-              <span>{dispute.paypalDisputeId}</span>
-            </Link>
+            <div className="flex items-center gap-2 h-full">
+              <Link
+                href={`/disputes/${dispute.id}`}
+                className="hover:underline flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-amber-600 dark:text-amber-400"
+              >
+                <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
+                <span>{dispute.paypalDisputeId}</span>
+              </Link>
+              {dispute.simulated && (
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/20 dark:border-[#60CDFF]/20">
+                  SIMULATED
+                </span>
+              )}
+            </div>
           );
         },
       },

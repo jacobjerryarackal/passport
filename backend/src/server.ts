@@ -34,6 +34,9 @@ app.use("/api", apiRouter);
 if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(`[Passport AI Backend] Listening on port ${PORT}`);
+    if (process.env.DEMO_MODE === "true") {
+      console.warn("[Passport AI Backend] DEMO MODE ACTIVE: webhook signature verification disabled on /api/webhooks/demo");
+    }
   });
 }
 

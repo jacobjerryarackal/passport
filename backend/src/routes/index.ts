@@ -25,5 +25,11 @@ router.use("/demo", demoRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/agent", agentRouter);
 
+router.get("/config", (_req, res) => {
+  res.json({
+    demoMode: process.env.DEMO_MODE === "true",
+  });
+});
+
 export default router;
 

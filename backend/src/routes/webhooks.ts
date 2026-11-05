@@ -31,6 +31,14 @@ router.post("/paypal", async (req: Request, res: Response) => {
       webhookEvent: body,
     });
 
+    if (!verification.isValid) {
+      return res.status(400).json({
+        error: "Invalid PayPal webhook signature",
+        status: verification.status,
+        details: verification.error,
+      });
+    }
+
     const eventId = body.id || `WH-${crypto.randomBytes(6).toString("hex")}`;
     const eventType = body.event_type || "UNKNOWN";
 
@@ -129,7 +137,14 @@ router.post("/paypal", async (req: Request, res: Response) => {
 });
 
 // POST /api/webhooks/demo (simulate dispute webhook)
+// Mounts / executes ONLY when DEMO_MODE is true (404 otherwise)
 router.post("/demo", async (req: Request, res: Response) => {
+  if (process.env.DEMO_MODE !== "true") {
+    return res.status(404).json({
+      error: "Not Found: Demo webhook route is disabled. Enable DEMO_MODE=true in environment to access.",
+    });
+  }
+
   try {
     const { eventType = "CUSTOMER.DISPUTE.CREATED" } = req.body || {};
 
@@ -317,6 +332,7 @@ router.post("/demo", async (req: Request, res: Response) => {
         disputeReason: "UNAUTHORIZED_TRANSACTION",
         disputeAmount: validPurchase.amount,
         currency: validPurchase.currency,
+        simulated: true,
         dueDate: new Date(Date.now() + 7 * 86400000),
         buyerNotes: "Cardholder reported unrecognized digital charge; claims card details were compromised.",
       },
@@ -341,10 +357,12 @@ router.post("/demo", async (req: Request, res: Response) => {
       action: "DISPUTE_RECEIVED",
       actor: "PAYPAL_WEBHOOK",
       actorModel: "simulated-webhook-trigger",
+      simulated: true,
       details: {
         disputeId: dispute.id,
         paypalDisputeId: dispute.paypalDisputeId,
         webhookId: eventId,
+        simulated: true,
       },
     });
 

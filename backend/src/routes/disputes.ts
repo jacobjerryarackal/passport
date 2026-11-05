@@ -186,13 +186,20 @@ router.post("/:id/cosign", async (req: Request, res: Response) => {
     const now = new Date();
     const effectiveResponse = finalResponseText || dispute.draftResponse || "Evidence package submitted.";
 
-    // 1. Submit evidence payload to PayPal API
+    // 1. Submit evidence payload to PayPal API (or clearly labeled mock submission if simulated)
+    const isSimulated = Boolean(
+      dispute.simulated ||
+      dispute.paypalDisputeId.startsWith("PP-D-SIM") ||
+      dispute.paypalDisputeId.startsWith("PP-D-849201")
+    );
+
     const submissionResult = await submitDisputeEvidence({
       disputeId: dispute.paypalDisputeId,
       notes: effectiveResponse,
       evidenceType: "PROOF_OF_FULFILLMENT",
       evidenceItems: dispute.evidenceItems.map((e) => ({ title: e.title, hash: e.hash })),
       cosignedBy,
+      isSimulated,
     });
 
     // 2. Update Dispute in Database
@@ -208,6 +215,8 @@ router.post("/:id/cosign", async (req: Request, res: Response) => {
           disputeId: dispute.paypalDisputeId,
           cosignedBy,
           submittedAt: now.toISOString(),
+          isSimulated,
+          submissionMode: submissionResult.submissionMode || "SIMULATED SUBMISSION",
           submissionResult,
         }),
       },
@@ -219,11 +228,14 @@ router.post("/:id/cosign", async (req: Request, res: Response) => {
       action: "HUMAN_COSIGNED",
       actor: "HUMAN_ADMIN",
       actorModel: "dispute-co-sign-modal",
+      simulated: isSimulated,
       details: {
         disputeId: dispute.id,
         paypalDisputeId: dispute.paypalDisputeId,
         cosignedBy,
         cosignedAt: now.toISOString(),
+        isSimulated,
+        submissionMode: submissionResult.submissionMode,
       },
     });
 
@@ -232,11 +244,13 @@ router.post("/:id/cosign", async (req: Request, res: Response) => {
       mandateId: dispute.purchase.mandateId,
       action: "DISPUTE_SUBMITTED",
       actor: "SYSTEM_VALIDATOR",
-      actorModel: "paypal-disputes-v1-client",
+      actorModel: isSimulated ? "simulated-dispute-client" : "paypal-disputes-v1-client",
+      simulated: isSimulated,
       details: {
         disputeId: dispute.id,
         paypalDisputeId: dispute.paypalDisputeId,
-        isSimulated: submissionResult.isSimulated,
+        isSimulated,
+        submissionMode: submissionResult.submissionMode,
       },
     });
 

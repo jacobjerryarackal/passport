@@ -26,6 +26,7 @@ interface AuditLog {
   details: string;
   eventHash: string;
   parentHash?: string;
+  simulated?: boolean;
   timestamp: string;
 }
 
@@ -42,6 +43,7 @@ interface VerificationData {
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [verification, setVerification] = useState<VerificationData | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tampering, setTampering] = useState(false);
   const [repairing, setRepairing] = useState(false);
@@ -50,11 +52,24 @@ export default function AuditLogPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/audit");
-      const json = await res.json();
-      if (json.auditLogs) {
-        setLogs(json.auditLogs);
-        setVerification(json.verification);
+      const [auditRes, configRes] = await Promise.all([
+        fetch("/api/audit"),
+        fetch("/api/config"),
+      ]);
+
+      if (auditRes.ok) {
+        const json = await auditRes.json();
+        if (json.auditLogs) {
+          setLogs(json.auditLogs);
+          setVerification(json.verification);
+        }
+      }
+
+      if (configRes.ok) {
+        const configJson = await configRes.json();
+        if (typeof configJson?.demoMode === "boolean") {
+          setDemoMode(configJson.demoMode);
+        }
       }
     } catch (err) {
       console.error("Audit log fetch error:", err);
@@ -114,18 +129,36 @@ export default function AuditLogPage() {
       {
         headerName: "Action & Actor",
         field: "action",
-        minWidth: 200,
-        flex: 1.5,
+        minWidth: 220,
+        flex: 1.6,
         cellRenderer: (params: any) => {
           const log = params.data as AuditLog;
           if (!log) return null;
           const isTampered = log.eventHash.startsWith("TAMPERED_");
+          const isSimulated = Boolean(
+            log.simulated ||
+            log.details?.includes('"simulated":true') ||
+            log.actorModel?.includes("simulat")
+          );
+          const isLlmFallback = log.action === "LLM_FALLBACK_ACTIVATED";
+
           return (
             <div className="flex flex-col justify-center h-full py-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono font-bold text-black dark:text-white text-xs leading-tight">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span
+                  className={`font-mono font-bold text-xs leading-tight ${
+                    isLlmFallback
+                      ? "text-[#0070BA] dark:text-[#60CDFF]"
+                      : "text-black dark:text-white"
+                  }`}
+                >
                   {log.action}
                 </span>
+                {isSimulated && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/20 dark:border-[#60CDFF]/20">
+                    SIMULATED
+                  </span>
+                )}
                 {isTampered && (
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-black text-white bg-rose-600">
                     MUTATED
@@ -147,6 +180,13 @@ export default function AuditLogPage() {
         cellRenderer: (params: any) => {
           const log = params.data as AuditLog;
           if (!log) return null;
+          if (log.action === "LLM_FALLBACK_ACTIVATED") {
+            return (
+              <div className="flex items-center h-full font-mono text-[11px] text-sky-600 dark:text-sky-400 font-bold truncate">
+                {log.actorModel} (Fallback)
+              </div>
+            );
+          }
           return (
             <div className="flex items-center h-full font-mono text-[11px] text-[#002991] dark:text-[#60CDFF] truncate">
               {log.actorModel || "system-guard"}
@@ -162,13 +202,20 @@ export default function AuditLogPage() {
         cellRenderer: (params: any) => {
           const log = params.data as AuditLog;
           if (!log) return null;
+          let displayDetails = log.details;
+          if (log.action === "LLM_FALLBACK_ACTIVATED") {
+            try {
+              const parsed = JSON.parse(log.details);
+              displayDetails = `LLM Resilience: HTTP ${parsed.statusCode} on ${parsed.from_model} → Switched to ${parsed.to_model} (${parsed.purpose})`;
+            } catch {}
+          }
           return (
             <div className="flex items-center h-full">
               <span
                 className="max-w-[340px] truncate text-[11px] text-[#1D1E20] dark:text-white/80 font-mono"
-                title={log.details}
+                title={displayDetails}
               >
-                {log.details}
+                {displayDetails}
               </span>
             </div>
           );
@@ -224,11 +271,17 @@ export default function AuditLogPage() {
       {/* Editorial Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-black/10 dark:border-white/10">
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className={`w-2 h-2 rounded-full ${verification?.isChainIntact === false ? "bg-rose-500" : "bg-[#007A56] dark:bg-emerald-400"} animate-pulse`} />
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF]">
               Cryptographic Audit Chain · Merkle Ledger &amp; Ed25519 Attestations
             </span>
+            {demoMode && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/20 dark:border-[#60CDFF]/20 shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#002991] dark:bg-[#60CDFF] animate-pulse" />
+                DEMO MODE: SIMULATED EVENTS
+              </span>
+            )}
           </div>
           <h1 className="font-display font-black text-3xl sm:text-4xl lg:text-[42px] text-black dark:text-white tracking-[-0.03em] leading-[1.1]">
             Tamper-Evident Audit Ledger

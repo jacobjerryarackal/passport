@@ -97,20 +97,13 @@ export async function verifyPayPalWebhookSignature(params: VerifyWebhookParams):
     webhookEvent,
   } = params;
 
-  // 1. Simulation / Local dev fallback check
-  const isSimulation =
-    !isPayPalConfigured() ||
-    !transmissionId ||
-    !transmissionSig ||
-    !certUrl ||
-    transmissionId.startsWith("WH-SIM") ||
-    transmissionId.startsWith("SIM-");
-
-  if (isSimulation) {
+  // 1. Check required PayPal transmission headers for real webhook verification
+  if (!transmissionId || !transmissionSig || !certUrl) {
     return {
-      isValid: true,
-      status: "SUCCESS_SIMULATED",
-      isSimulated: true,
+      isValid: false,
+      status: "MISSING_REQUIRED_HEADERS",
+      isSimulated: false,
+      error: "Missing required PayPal webhook transmission headers",
     };
   }
 

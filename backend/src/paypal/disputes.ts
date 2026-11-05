@@ -107,10 +107,29 @@ export async function submitDisputeEvidence(params: {
   evidenceType: string;
   evidenceItems: Array<{ title: string; hash: string }>;
   cosignedBy: string;
-}): Promise<{ success: boolean; disputeId: string; submittedAt: string; isSimulated: boolean }> {
+  isSimulated?: boolean;
+}): Promise<{
+  success: boolean;
+  disputeId: string;
+  submittedAt: string;
+  isSimulated: boolean;
+  submissionMode: string;
+}> {
   const isConfigured = isPayPalConfigured();
 
-  // 1. Verify dispute status is WAITING_FOR_SELLER_RESPONSE before submitting
+  // If this dispute is simulated, use clearly labeled mock submission ("SIMULATED SUBMISSION")
+  // and do not make any external PayPal REST calls with fake IDs.
+  if (params.isSimulated || !isConfigured || params.disputeId.startsWith("PP-D-SIM") || params.disputeId.startsWith("PP-D-849201")) {
+    return {
+      success: true,
+      disputeId: params.disputeId,
+      submittedAt: new Date().toISOString(),
+      isSimulated: true,
+      submissionMode: "SIMULATED SUBMISSION",
+    };
+  }
+
+  // 1. Verify dispute status is WAITING_FOR_SELLER_RESPONSE before submitting for real sandbox disputes
   const disputeLookup = await getPayPalDispute(params.disputeId);
   const currentStatus = disputeLookup.dispute?.status || "WAITING_FOR_SELLER_RESPONSE";
   if (currentStatus !== "WAITING_FOR_SELLER_RESPONSE") {
@@ -149,15 +168,6 @@ export async function submitDisputeEvidence(params: {
   ];
   const multipartBody = bodyParts.join("\r\n");
 
-  if (!isConfigured || params.disputeId.startsWith("PP-D-849201")) {
-    return {
-      success: true,
-      disputeId: params.disputeId,
-      submittedAt: new Date().toISOString(),
-      isSimulated: true,
-    };
-  }
-
   // 3. Raw REST call to POST /v1/customer/disputes/{disputeId}/provide-evidence
   const res = await paypalFetch(`/v1/customer/disputes/${params.disputeId}/provide-evidence`, {
     method: "POST",
@@ -171,7 +181,8 @@ export async function submitDisputeEvidence(params: {
     success: res.ok,
     disputeId: params.disputeId,
     submittedAt: new Date().toISOString(),
-    isSimulated: res.isSimulated,
+    isSimulated: Boolean(res.isSimulated),
+    submissionMode: res.isSimulated ? "SIMULATED SUBMISSION" : "PAYPAL_REST_API",
   };
 }
 

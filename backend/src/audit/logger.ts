@@ -17,7 +17,8 @@ export type AuditAction =
   | "EVIDENCE_GATHERED"
   | "RESPONSE_DRAFTED"
   | "HUMAN_COSIGNED"
-  | "DISPUTE_SUBMITTED";
+  | "DISPUTE_SUBMITTED"
+  | "LLM_FALLBACK_ACTIVATED";
 
 export type AuditActor =
   | "HUMAN_ADMIN"
@@ -34,6 +35,7 @@ export async function logAuditEvent(params: {
   actor: AuditActor;
   actorModel?: string;
   details: Record<string, unknown> | string;
+  simulated?: boolean;
 }) {
   try {
     // Find latest audit log to establish Merkle parent link
@@ -69,6 +71,7 @@ export async function logAuditEvent(params: {
         details: detailsStr,
         eventHash,
         parentHash,
+        simulated: Boolean(params.simulated),
         timestamp,
       },
     });

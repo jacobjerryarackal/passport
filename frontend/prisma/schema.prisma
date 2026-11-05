@@ -118,6 +118,7 @@ model Dispute {
   cosignedAt            DateTime?
   submittedAt           DateTime?
   submissionPayload     String?        // Final JSON sent to PayPal
+  simulated             Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -148,6 +149,7 @@ model AuditLog {
   details    String   // JSON text
   eventHash  String   // SHA-256 hash
   parentHash String?
+  simulated  Boolean  @default(false)
   timestamp  DateTime @default(now())
 }
 

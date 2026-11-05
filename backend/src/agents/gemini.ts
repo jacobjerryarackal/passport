@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logAuditEvent } from "../audit/logger";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 let genAI: GoogleGenerativeAI | null = null;
@@ -13,6 +14,113 @@ if (apiKey && apiKey.trim() !== "") {
 
 export function isGeminiConfigured(): boolean {
   return Boolean(genAI && apiKey && apiKey.trim() !== "");
+}
+
+// Configurable model IDs
+export const GEMINI_PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-2.5-pro";
+export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
+
+/**
+ * Detects whether an error from GoogleGenerativeAI is retryable (429 Rate Limit/Quota or 503 Unavailable)
+ */
+export function detectRetryableLlmStatus(err: any): number | null {
+  if (!err) return null;
+  const status = Number(err?.status || err?.statusCode || err?.response?.status);
+  if (status === 429 || status === 503) {
+    return status;
+  }
+  const msg = (err?.message || "").toLowerCase();
+  const code = (err?.code || "").toString().toLowerCase();
+
+  if (
+    msg.includes("429") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("quota") ||
+    code === "429" ||
+    code.includes("resource_exhausted")
+  ) {
+    return 429;
+  }
+  if (
+    msg.includes("503") ||
+    msg.includes("unavailable") ||
+    msg.includes("high load") ||
+    code === "503" ||
+    code.includes("unavailable")
+  ) {
+    return 503;
+  }
+  return null;
+}
+
+/**
+ * Executes a Gemini prompt with automatic single-retry fallback on 429 or 503.
+ * Logs LLM_FALLBACK_ACTIVATED audit event through the existing audit trail.
+ */
+export async function executeGeminiWithFallback(params: {
+  purpose: "mandate_parsing" | "purchase_proposal" | "dispute_classification";
+  mandateId?: string;
+  prompt: string | Array<{ text: string }>;
+}): Promise<{ text: string; modelUsed: string; fallbackActivated: boolean }> {
+  if (!isGeminiConfigured() || !genAI) {
+    throw new Error("Gemini AI is not configured with an API key");
+  }
+
+  const primaryModelName = GEMINI_PRIMARY_MODEL;
+  const fallbackModelName = GEMINI_FALLBACK_MODEL;
+
+  // 1. Primary Model Attempt
+  try {
+    // Dev-only switch: GEMINI_SIMULATE_429 forces primary call to fail with a 429
+    if (process.env.GEMINI_SIMULATE_429 === "true") {
+      const simError: any = new Error(
+        "[GoogleGenerativeAI Error]: 429 Too Many Requests: Resource has been exhausted (simulated via GEMINI_SIMULATE_429)"
+      );
+      simError.status = 429;
+      throw simError;
+    }
+
+    const model = genAI.getGenerativeModel({ model: primaryModelName });
+    const result = await model.generateContent(params.prompt as any);
+    const text = result.response.text();
+    return { text, modelUsed: primaryModelName, fallbackActivated: false };
+  } catch (primaryErr: any) {
+    const statusCode = detectRetryableLlmStatus(primaryErr);
+
+    if (statusCode === 429 || statusCode === 503) {
+      console.warn(
+        `[Gemini Resilience] Primary model (${primaryModelName}) failed with HTTP ${statusCode}. Triggering single retry with fallback model (${fallbackModelName}).`
+      );
+
+      // Write LLM_FALLBACK_ACTIVATED audit entry through existing tamper-evident audit path
+      // Strictly avoid logging prompt content, PII, or API keys
+      try {
+        await logAuditEvent({
+          mandateId: params.mandateId,
+          action: "LLM_FALLBACK_ACTIVATED",
+          actor: "SYSTEM_VALIDATOR",
+          actorModel: fallbackModelName,
+          details: {
+            from_model: primaryModelName,
+            to_model: fallbackModelName,
+            statusCode,
+            purpose: params.purpose,
+          },
+        });
+      } catch (auditErr) {
+        console.warn("Non-breaking audit log write failure on LLM fallback:", auditErr);
+      }
+
+      // Retry ONCE with fallback model
+      const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+      const fallbackResult = await fallbackModel.generateContent(params.prompt as any);
+      const text = fallbackResult.response.text();
+      return { text, modelUsed: fallbackModelName, fallbackActivated: true };
+    }
+
+    // Re-throw non-retryable error to trigger deterministic fallback
+    throw primaryErr;
+  }
 }
 
 // 1. Natural Language Mandate Parser
@@ -61,7 +169,6 @@ export async function parseNaturalLanguageMandate(prompt: string): Promise<Parse
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const systemPrompt = `You are an AI financial compliance engineer. Parse the following natural-language spend authorization into a strict JSON mandate:
 Return ONLY valid JSON matching this structure:
 {
@@ -74,13 +181,12 @@ Return ONLY valid JSON matching this structure:
   "refundPolicy": string (policy string)
 }`;
 
-    const result = await model.generateContent([
-      { text: systemPrompt },
-      { text: `Authorizer Prompt: "${prompt}"` },
-    ]);
+    const { text } = await executeGeminiWithFallback({
+      purpose: "mandate_parsing",
+      prompt: [{ text: systemPrompt }, { text: `Authorizer Prompt: "${prompt}"` }],
+    });
 
-    const responseText = result.response.text();
-    const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     return {
@@ -95,7 +201,7 @@ Return ONLY valid JSON matching this structure:
       refundPolicy: parsed.refundPolicy || fallbackResult.refundPolicy,
     };
   } catch (err) {
-    console.warn("Gemini parse failed, falling back to heuristic extraction:", err);
+    console.warn("Gemini parse failed or fallback exhausted, using heuristic extraction:", err);
     return fallbackResult;
   }
 }
@@ -108,10 +214,12 @@ export interface GeneratedProposalResult {
   currency: string;
   recipient: string;
   reasoning: string;
+  modelUsed?: string;
 }
 
 export async function generateAgentProposal(params: {
   mandate: {
+    id?: string;
     title: string;
     purpose: string;
     maxAmount: number;
@@ -140,6 +248,7 @@ export async function generateAgentProposal(params: {
     currency: "USD",
     recipient: "client-vip@partnercorp.io",
     reasoning: `Proposing a $75 Starbucks Digital e-Gift Card. This directly fulfills the mandate purpose ("${params.mandate.purpose}"), stays under the $${params.mandate.maxAmount.toFixed(2)} cap with a $5 buffer, and adheres to authorized category 'digital gift cards'.`,
+    modelUsed: GEMINI_PRIMARY_MODEL,
   };
 
   if (!isGeminiConfigured() || !genAI) {
@@ -147,7 +256,6 @@ export async function generateAgentProposal(params: {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are an AI purchasing agent operating under strict financial constraints.
 Mandate:
 - Purpose: ${params.mandate.purpose}
@@ -167,9 +275,14 @@ Return ONLY valid JSON:
   "reasoning": string
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const { text, modelUsed } = await executeGeminiWithFallback({
+      purpose: "purchase_proposal",
+      mandateId: params.mandate.id,
+      prompt,
+    });
+
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
 
     return {
       itemName: parsed.itemName || defaultApproved.itemName,
@@ -178,9 +291,10 @@ Return ONLY valid JSON:
       currency: parsed.currency || defaultApproved.currency,
       recipient: parsed.recipient || defaultApproved.recipient,
       reasoning: parsed.reasoning || defaultApproved.reasoning,
+      modelUsed,
     };
   } catch (err) {
-    console.warn("Gemini proposal generation error, using default approved:", err);
+    console.warn("Gemini proposal generation failed or fallback exhausted, using default approved proposal:", err);
     return defaultApproved;
   }
 }
@@ -200,6 +314,7 @@ export interface TriggerProposalResult {
 export async function parseTriggerToProposal(params: {
   triggerText: string;
   mandate: {
+    id?: string;
     title: string;
     purpose: string;
     maxAmount: number;
@@ -290,7 +405,6 @@ export async function parseTriggerToProposal(params: {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are an AI purchasing agent operating under corporate financial governance.
 Active Mandate:
 - Purpose: ${params.mandate.purpose}
@@ -312,8 +426,13 @@ Return ONLY valid JSON matching:
   "reasoning": string
 }`;
 
-    const result = await model.generateContent(prompt);
-    const cleaned = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+    const { text } = await executeGeminiWithFallback({
+      purpose: "purchase_proposal",
+      mandateId: params.mandate.id,
+      prompt,
+    });
+
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     return {
@@ -326,7 +445,7 @@ Return ONLY valid JSON matching:
       reasoning: parsed.reasoning || defaultCustom.reasoning,
     };
   } catch (err) {
-    console.warn("Gemini trigger parsing failed, falling back to heuristics:", err);
+    console.warn("Gemini trigger parsing failed or fallback exhausted, using heuristic proposal:", err);
     return defaultCustom;
   }
 }
@@ -341,6 +460,7 @@ export interface DisputeAutopsyAnalysis {
     recommendedStrategy: string;
     riskAssessment: string;
     summary: string;
+    modelUsed?: string;
   };
   evidenceChecklist: Array<{
     id: string;
@@ -368,6 +488,7 @@ export async function analyzeDisputeWithGemini(params: {
     buyerNotes?: string;
   };
   mandate: {
+    id?: string;
     title: string;
     purpose: string;
     maxAmount: number;
@@ -406,7 +527,7 @@ export async function analyzeDisputeWithGemini(params: {
       key: "AGENT_REASONING_LOG",
       title: "AI Agent Reasoning & Boundary Enforcement Transcript",
       status: "VERIFIED",
-      description: `Gemini 2.5 Pro inference transcript showing bounded proposal strictly within mandate constraints.`,
+      description: `Deterministic inference transcript showing bounded proposal strictly within mandate constraints.`,
     },
     {
       id: "ev-4",
@@ -457,16 +578,25 @@ Under PayPal Seller Protection guidelines for intangible/digital goods and valid
 Respectfully submitted,
 Compliance & Treasury Operations (Human Co-signed)`;
 
+  // Deterministic classification derived directly from PayPal's dispute reason code
+  const reasonCode = params.dispute.reason || "UNAUTHORIZED_TRANSACTION";
+  const isUnauthorized = reasonCode.toUpperCase().includes("UNAUTHORIZED");
+  const strategy = isUnauthorized
+    ? "COMPELLING_EVIDENCE_DIGITAL_DELIVERY"
+    : "PROOF_OF_FULFILLMENT_AND_TERMS";
+
   const defaultClassification: DisputeAutopsyAnalysis["classification"] = {
-    category: params.dispute.reason || "UNAUTHORIZED_TRANSACTION",
+    category: reasonCode,
     evidenceCoverageScore: "5/5 Evidence Verified",
     evidenceCoverageRatio: 1.0,
     evidenceRationale:
-      "Classification substantiated by [ev-1] Human Spend Mandate Bounds, [ev-2] PayPal Settlement with Seller Protection ELIGIBLE, [ev-3] Agent Inference Trace, [ev-4] Digital Fulfillment Receipt, and [ev-5] Merchant Terms.",
-    recommendedStrategy: "COMPELLING_EVIDENCE_DIGITAL_DELIVERY",
+      "Deterministic classification from PayPal reason code substantiated by [ev-1] Human Spend Mandate Bounds, [ev-2] PayPal Settlement with Seller Protection ELIGIBLE, [ev-3] Agent Inference Trace, [ev-4] Digital Fulfillment Receipt, and [ev-5] Merchant Terms.",
+    recommendedStrategy: strategy,
     riskAssessment: "LOW_RISK_MERCHANT_FAVOR",
-    summary:
-      "Cardholder claims unauthorized transaction. However, the purchase was strictly authorized by an explicit business spend mandate, paid through an authenticated corporate PayPal sandbox wallet, and the digital gift card was delivered directly to the designated client recipient email.",
+    summary: isUnauthorized
+      ? "Cardholder claims unauthorized transaction. However, the purchase was strictly authorized by an explicit business spend mandate, paid through an authenticated corporate PayPal sandbox wallet, and the digital gift card was delivered directly to the designated client recipient email."
+      : `Cardholder filed dispute under reason "${reasonCode}". All 5 defense proof points verify that goods/services were fulfilled pursuant to explicit spend mandate authorization.`,
+    modelUsed: "deterministic-paypal-classifier",
   };
 
   if (!isGeminiConfigured() || !genAI) {
@@ -479,7 +609,6 @@ Compliance & Treasury Operations (Human Co-signed)`;
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are a Senior Fintech Dispute & Chargeback Defense AI Specialist.
 Analyze the following PayPal dispute for an AI-agent executed transaction:
 
@@ -510,18 +639,26 @@ Return valid JSON:
   "draftResponse": string
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const { text, modelUsed } = await executeGeminiWithFallback({
+      purpose: "dispute_classification",
+      mandateId: params.mandate.id,
+      prompt,
+    });
+
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
 
     return {
-      classification: parsed.classification || defaultClassification,
+      classification: {
+        ...(parsed.classification || defaultClassification),
+        modelUsed,
+      },
       evidenceChecklist: parsed.evidenceChecklist || defaultEvidenceChecklist,
       evidenceGaps: parsed.evidenceGaps || defaultEvidenceGaps,
       draftResponse: parsed.draftResponse || defaultDraftResponse,
     };
   } catch (err) {
-    console.warn("Gemini dispute analysis failed, using high-grade template:", err);
+    console.warn("Gemini dispute analysis failed or fallback exhausted, returning deterministic classification from PayPal reason code:", err);
     return {
       classification: defaultClassification,
       evidenceChecklist: defaultEvidenceChecklist,

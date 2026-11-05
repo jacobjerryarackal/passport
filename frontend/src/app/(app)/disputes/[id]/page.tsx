@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +44,7 @@ export default function DisputeAutopsyPage() {
 
   // Case status state: changes from "ACTION_REQUIRED" to "SUBMITTED" after co-sign
   const [caseStatus, setCaseStatus] = useState<"ACTION_REQUIRED" | "SUBMITTED">("ACTION_REQUIRED");
+  const [disputeRecord, setDisputeRecord] = useState<any | null>(null);
 
   // Co-signature modal state
   const [showModal, setShowModal] = useState(false);
@@ -53,6 +54,33 @@ export default function DisputeAutopsyPage() {
 
   // Exact SHA-256 payload hash being co-signed
   const payloadHash = "8b1a4f92c30e49a8d29b1093ee1402a7b8e1f02c91834a8e2938f01a39bc41d2";
+
+  useEffect(() => {
+    async function loadDispute() {
+      try {
+        const res = await fetch(`/api/disputes/${disputeId}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.dispute) {
+            setDisputeRecord(json.dispute);
+            if (json.dispute.status === "SUBMITTED") {
+              setCaseStatus("SUBMITTED");
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Dispute fetch fallback:", err);
+      }
+    }
+    loadDispute();
+  }, [disputeId]);
+
+  const isSimulated = Boolean(
+    disputeRecord?.simulated ||
+    disputeRecord?.paypalDisputeId?.includes("SIM") ||
+    disputeId.includes("demo") ||
+    disputeId.startsWith("PP-D-849201")
+  );
 
   // 5 Evidence items: 3 VERIFIED (emerald green), 2 MISSING PROOF (muted amber)
   const evidenceItems: EvidenceTimelineItem[] = [
@@ -104,9 +132,21 @@ export default function DisputeAutopsyPage() {
   ];
 
   // The Climax: Circular Radial Confirmation Pulse before updating case to SUBMITTED
-  const handleConfirmAndSubmit = () => {
+  const handleConfirmAndSubmit = async () => {
     setIsSubmitting(true);
     setIsPulsing(true);
+
+    try {
+      await fetch(`/api/disputes/${disputeId}/cosign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cosignedBy: "Authorized Risk Officer",
+        }),
+      });
+    } catch (err) {
+      console.warn("Dispute co-sign error:", err);
+    }
 
     // Pulse animation runs for 1.2s before closing modal and confirming
     setTimeout(() => {
@@ -154,10 +194,17 @@ export default function DisputeAutopsyPage() {
                 Dispute Forensics Incident Room
               </span>
             </div>
-            {/* Case #DISP-XXXX in mono text */}
-            <h1 className="font-mono font-black text-2xl sm:text-3xl text-black dark:text-white tracking-tight">
-              Case #PP-D-849201
-            </h1>
+            {/* Case #DISP-XXXX in mono text with SIMULATED badge if applicable */}
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-mono font-black text-2xl sm:text-3xl text-black dark:text-white tracking-tight">
+                Case #{disputeRecord?.paypalDisputeId || "PP-D-849201"}
+              </h1>
+              {isSimulated && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 border border-[#002991]/20 dark:border-[#60CDFF]/20 shadow-xs">
+                  SIMULATED
+                </span>
+              )}
+            </div>
             <p className="text-xs text-[#6C7378] dark:text-white/60 font-mono">
               PayPal Settlement: CAPTURE-7TY90123L-SB · Disputed Amount: $75.00 USD
             </p>
@@ -346,7 +393,7 @@ export default function DisputeAutopsyPage() {
           {caseStatus === "SUBMITTED" ? (
             <span className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-black text-[#007A56] dark:text-emerald-400 bg-[#007A56]/15 border border-[#007A56]/30 shadow-sm">
               <CheckCircle2 className="w-4 h-4" />
-              <span>DEFENSE SUBMITTED TO PAYPAL</span>
+              <span>{isSimulated ? "SIMULATED SUBMISSION" : "DEFENSE SUBMITTED TO PAYPAL"}</span>
             </span>
           ) : (
             <button
@@ -354,7 +401,7 @@ export default function DisputeAutopsyPage() {
               onClick={() => setShowModal(true)}
               className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-sm font-black text-black bg-[#FFB800] hover:bg-[#e6a600] active:scale-[0.98] transition-all shadow-md"
             >
-              <span>Co-Sign Defense</span>
+              <span>{isSimulated ? "Co-Sign Simulated Defense" : "Co-Sign Defense"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           )}
@@ -426,6 +473,14 @@ export default function DisputeAutopsyPage() {
               </div>
             </div>
 
+            {/* Submission Pipeline Mode */}
+            <div className="p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 text-xs font-mono flex items-center justify-between">
+              <span className="text-[#6C7378] dark:text-white/60">Execution Pipeline:</span>
+              <span className="font-bold text-[#002991] dark:text-[#60CDFF]">
+                {isSimulated ? "SIMULATED SUBMISSION (Mocked without external PayPal API call)" : "PayPal Disputes REST API (Live Sandbox)"}
+              </span>
+            </div>
+
             {/* Legal Statement */}
             <div className="space-y-2 text-xs text-[#6C7378] dark:text-white/70 leading-relaxed font-mono">
               <p>
@@ -455,7 +510,7 @@ export default function DisputeAutopsyPage() {
                   <span>Sealing Attestation...</span>
                 ) : (
                   <>
-                    <span>Confirm &amp; Submit</span>
+                    <span>{isSimulated ? "Confirm & Seal Simulated Defense" : "Confirm & Submit to PayPal"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
