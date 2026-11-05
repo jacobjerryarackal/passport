@@ -14,6 +14,8 @@ export interface NavItem {
 const defaultAppNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Simulator", href: "/simulator" },
+  { name: "Store", href: "/store" },
+  { name: "Merchant", href: "/merchant" },
   { name: "Mandates", href: "/mandates" },
   { name: "Purchases", href: "/purchases" },
   { name: "Passports", href: "/passports" },

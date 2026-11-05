@@ -16,6 +16,21 @@ export function isPayPalConfigured(): boolean {
   return Boolean(clientId && clientSecret && clientId.trim() !== "" && clientSecret.trim() !== "");
 }
 
+export function getMerchantPayPalCredentials() {
+  const clientId = process.env.MERCHANT_PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.MERCHANT_PAYPAL_CLIENT_SECRET || process.env.PAYPAL_CLIENT_SECRET;
+  const isSeparate = Boolean(
+    process.env.MERCHANT_PAYPAL_CLIENT_ID &&
+    process.env.MERCHANT_PAYPAL_CLIENT_ID !== process.env.PAYPAL_CLIENT_ID
+  );
+  return {
+    clientId,
+    clientSecret,
+    isSeparate,
+    isConfigured: Boolean(clientId && clientSecret && clientId.trim() !== "" && clientSecret.trim() !== ""),
+  };
+}
+
 export function getPayPalConfigInfo() {
   const configured = isPayPalConfigured();
   return {

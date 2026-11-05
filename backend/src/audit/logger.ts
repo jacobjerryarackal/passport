@@ -18,7 +18,9 @@ export type AuditAction =
   | "RESPONSE_DRAFTED"
   | "HUMAN_COSIGNED"
   | "DISPUTE_SUBMITTED"
-  | "LLM_FALLBACK_ACTIVATED";
+  | "LLM_FALLBACK_ACTIVATED"
+  | "MERCHANT_CHECKOUT_ACCEPTED"
+  | "MERCHANT_CHECKOUT_REJECTED";
 
 export type AuditActor =
   | "HUMAN_ADMIN"
@@ -27,7 +29,8 @@ export type AuditActor =
   | "SYSTEM_VALIDATOR"
   | "PAYPAL_API"
   | "PAYPAL_WEBHOOK"
-  | "DISPUTE_AGENT";
+  | "DISPUTE_AGENT"
+  | "MERCHANT_PORTAL";
 
 export async function logAuditEvent(params: {
   mandateId?: string;

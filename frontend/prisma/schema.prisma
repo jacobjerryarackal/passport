@@ -166,3 +166,38 @@ model WebhookEvent {
   receivedAt     DateTime @default(now())
 }
 
+model MerchantProduct {
+  id          String          @id @default(uuid())
+  sku         String          @unique
+  name        String
+  description String
+  amount      Float
+  currency    String          @default("USD")
+  category    String          // "digital gift cards"
+  merchant    String          @default("GiftCardCo")
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  orders      MerchantOrder[]
+}
+
+model MerchantOrder {
+  id                 String          @id @default(uuid())
+  orderNumber        String          @unique
+  productId          String
+  product            MerchantProduct @relation(fields: [productId], references: [id])
+  passportId         String
+  passportNumber     String
+  mandateId          String?
+  amount             Float
+  currency           String          @default("USD")
+  status             String          @default("CAPTURED") // CAPTURED, REJECTED, DISPUTED
+  verificationStatus String          // VERIFIED, REJECTED
+  rejectionReason    String?
+  paypalOrderId      String?
+  paypalCaptureId    String?
+  simulated          Boolean         @default(false)
+  idempotencyKey     String?         @unique
+  createdAt          DateTime        @default(now())
+}
+

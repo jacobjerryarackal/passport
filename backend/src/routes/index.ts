@@ -10,6 +10,7 @@ import webhooksRouter from "./webhooks";
 import demoRouter from "./demo";
 import dashboardRouter from "./dashboard";
 import agentRouter from "./agent";
+import merchantRouter from "./merchant";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use("/webhooks", webhooksRouter);
 router.use("/demo", demoRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/agent", agentRouter);
+router.use("/merchant", merchantRouter);
 
 router.get("/config", (_req, res) => {
   res.json({
