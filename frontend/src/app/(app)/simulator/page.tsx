@@ -293,16 +293,24 @@ export default function SimulatorPage() {
         throw new Error(data.error || "PayPal execution failed");
       }
 
-      setCheckoutResult({
-        purchaseId: data.purchase.id,
-        paypalOrderId: data.purchase.paypalOrderId,
-        paypalCaptureId: data.purchase.paypalCaptureId || "CAPTURE-PENDING",
-        passportId: data.passport.id,
-        passportNumber: data.passport.passportNumber,
-        sellerProtectionStatus: "ELIGIBLE",
-        amount: data.purchase.amount,
-        currency: data.purchase.currency,
-      });
+      // PayPal Consent Moment: Redirect browser to PayPal approval URL
+      if (data.approveUrl) {
+        window.location.href = data.approveUrl;
+        return;
+      }
+
+      if (data.purchase && data.passport) {
+        setCheckoutResult({
+          purchaseId: data.purchase.id,
+          paypalOrderId: data.purchase.paypalOrderId,
+          paypalCaptureId: data.purchase.paypalCaptureId || "CAPTURE-PENDING",
+          passportId: data.passport.id,
+          passportNumber: data.passport.passportNumber,
+          sellerProtectionStatus: "ELIGIBLE",
+          amount: data.purchase.amount,
+          currency: data.purchase.currency,
+        });
+      }
     } catch (err) {
       alert("PayPal Checkout Error: " + (err as Error).message);
     } finally {

@@ -131,10 +131,11 @@ export function DashboardClient({
       });
       const data = await res.json();
       if (res.ok) {
-        setWebhookMessage(`Dispute ${data.dispute?.paypalDisputeId || "PP-D-..."} Ingested!`);
+        const caseNumber = data.dispute?.paypalDisputeId || data.disputeId || "PP-D-SIM";
+        setWebhookMessage(`Dispute ${caseNumber} Ingested! Refreshing telemetry...`);
         setTimeout(() => {
-          window.location.href = `/disputes/${data.dispute?.id || activeDispute.id || "disp-chargeback-demo"}`;
-        }, 600);
+          window.location.reload();
+        }, 800);
       } else {
         alert(data.error || "Webhook simulation failed");
       }

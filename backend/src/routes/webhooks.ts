@@ -369,6 +369,7 @@ router.post("/demo", async (req: Request, res: Response) => {
     return res.json({
       success: true,
       eventId,
+      disputeId: dispute.id,
       dispute: autopsy.dispute,
       analysis: autopsy.analysis,
     });

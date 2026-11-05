@@ -17,7 +17,6 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
-import { GlobalNavbar } from "@/components/layout/global-navbar";
 import { formatCurrency, formatDate, truncateHash } from "@/lib/utils";
 
 interface PassportVerificationPayload {
@@ -76,7 +75,7 @@ export default function MerchantVerifyPage() {
     async function loadPassport() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/passports/${passportId}`);
+        const res = await fetch(`/api/passports/${passportId}/public`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
@@ -166,9 +165,37 @@ export default function MerchantVerifyPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#060608] text-[#1D1E20] dark:text-[#FAFAFA] font-sans">
-      <GlobalNavbar />
+      {/* Public Standalone Verification Header (Completely independent of app layout) */}
+      <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-[#060608]/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-full bg-[#002991] flex items-center justify-center text-white font-black text-sm tracking-tighter">
+              P
+            </div>
+            <span className="font-display font-black text-lg text-black dark:text-white tracking-tight">
+              Passport
+            </span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF] bg-[#002991]/10 dark:bg-[#60CDFF]/15 px-2 py-0.5 rounded-full ml-1">
+              Public Notary
+            </span>
+          </Link>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-20 space-y-8 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono font-bold text-[#007A56] dark:text-emerald-400 bg-[#007A56]/10 px-3 py-1 rounded-full border border-[#007A56]/20">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Zero-Knowledge Public Verification
+            </span>
+            <Link
+              href="/"
+              className="px-4 py-2 rounded-full text-xs font-bold text-black dark:text-white bg-black/5 dark:bg-white/10 hover:bg-black/10 transition-all"
+            >
+              Home
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20 space-y-8 animate-in fade-in duration-300">
         {/* Eyebrow Navigation */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-black/10 dark:border-white/10">
           <div className="flex items-center gap-2">

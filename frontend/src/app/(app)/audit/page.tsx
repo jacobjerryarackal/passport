@@ -403,16 +403,36 @@ export default function AuditLogPage() {
         </div>
 
         {/* AG GRID COMPONENT FOR CRYPTOGRAPHIC AUDIT STREAM */}
-        <DataGrid<AuditLog>
-          rowData={filteredLogs}
-          columnDefs={auditColumnDefs}
-          rowHeight={64}
-          pagination={true}
-          paginationPageSize={10}
-          domLayout="autoHeight"
-          loading={loading}
-          emptyMessage="No matching cryptographic audit records found."
-        />
+        {!loading && filteredLogs.length === 0 ? (
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#111114] p-12 text-center space-y-3 shadow-xs">
+            <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center mx-auto text-[#6C7378]">
+              <History className="w-5 h-5" />
+            </div>
+            <h4 className="text-sm font-bold text-black dark:text-white">No audit events found.</h4>
+            <p className="text-xs text-[#6C7378] dark:text-white/60 max-w-sm mx-auto">
+              The tamper-evident cryptographic ledger is ready. Trigger an agent simulation or transaction to append attested blocks.
+            </p>
+            <button
+              type="button"
+              onClick={fetchLogs}
+              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-[#002991] dark:text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/20 hover:bg-[#60CDFF]/20 transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Refresh Ledger</span>
+            </button>
+          </div>
+        ) : (
+          <DataGrid<AuditLog>
+            rowData={filteredLogs}
+            columnDefs={auditColumnDefs}
+            rowHeight={64}
+            pagination={true}
+            paginationPageSize={10}
+            domLayout="autoHeight"
+            loading={loading}
+            emptyMessage="No audit events found."
+          />
+        )}
       </div>
     </div>
   );

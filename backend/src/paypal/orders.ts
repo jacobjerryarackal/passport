@@ -55,6 +55,7 @@ export interface PayPalOrderResponse {
 
 export async function createPayPalOrder(params: CreateOrderParams): Promise<PayPalOrderResponse> {
   const isConfigured = isPayPalConfigured();
+  const frontendUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const passportId = params.passportId || `PASS-${Date.now().toString().slice(-6)}`;
   const mandateHash = params.mandateHash || crypto.createHash("sha256").update(params.mandateId).digest("hex").slice(0, 32);
   // custom_id attaches the Trust Passport ID and SHA-256 mandate hash for two-sided merchant verification
@@ -62,8 +63,9 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
 
   if (!isConfigured) {
     const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    const orderId = `PAYPAL-ORD-${randomSuffix}-SB`;
     return {
-      id: `PAYPAL-ORD-${randomSuffix}-SB`,
+      id: orderId,
       status: "APPROVED",
       intent: "CAPTURE",
       purchase_units: [
@@ -83,12 +85,12 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
       ],
       links: [
         {
-          href: `https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL-ORD-${randomSuffix}-SB`,
+          href: `${frontendUrl}/purchases/capture-success?token=${orderId}&PayerID=SIMULATED_PAYER`,
           rel: "approve",
           method: "GET",
         },
         {
-          href: `https://api-m.sandbox.paypal.com/v2/checkout/orders/PAYPAL-ORD-${randomSuffix}-SB/capture`,
+          href: `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`,
           rel: "capture",
           method: "POST",
         },
@@ -131,8 +133,8 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
       brand_name: "Passport AI Spend Guard",
       landing_page: "NO_PREFERENCE",
       user_action: "PAY_NOW",
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/paypal/return`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/paypal/cancel`,
+      return_url: `${frontendUrl}/purchases/capture-success`,
+      cancel_url: `${frontendUrl}/simulator`,
     },
   };
 
@@ -143,8 +145,9 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
 
   if (!response.ok || response.isSimulated) {
     const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
+    const orderId = `PAYPAL-ORD-${randomSuffix}-SB`;
     return {
-      id: `PAYPAL-ORD-${randomSuffix}-SB`,
+      id: orderId,
       status: "APPROVED",
       intent: "CAPTURE",
       purchase_units: [
@@ -156,6 +159,13 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
             currency_code: params.currency || "USD",
             value: params.amount.toFixed(2),
           },
+        },
+      ],
+      links: [
+        {
+          href: `${frontendUrl}/purchases/capture-success?token=${orderId}&PayerID=SIMULATED_PAYER`,
+          rel: "approve",
+          method: "GET",
         },
       ],
       isSimulated: true,
