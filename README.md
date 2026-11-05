@@ -1,144 +1,269 @@
-# 🛡️ Passport — Trust, Verifiable Receipt & Dispute-Defense Layer for AI-Agent Purchases
+# Passport — Trust, Receipts & Dispute Defense for AI-Agent Payments
 
-> **PayPal AI Hackathon 2026 Project**  
-> *"AI agents can spend money. Passport makes every purchase accountable."*
-
----
-
-## 🌟 Overview
-
-As autonomous AI agents gain the capability to execute real-world transactions through tool-calling and API wallets, small businesses face an existential risk: **how do you prove an AI agent was authorized to spend money, and how do you defend against chargebacks when a cardholder disputes the charge?**
-
-**Passport** is an institutional-grade trust, receipt, and dispute-defense layer for autonomous AI-agent commerce:
-1. **Spend Mandates**: A human sets explicit spending boundaries (purpose, budget cap, allowed categories, expiry).
-2. **Deterministic Guardrails**: AI purchase proposals are evaluated against strict code rules. Out-of-scope proposals ($120 chair) are blocked before hitting payment rails.
-3. **PayPal Sandbox Checkout**: Authorized transactions ($75 digital gift card) are created and captured via the **PayPal Orders v2 API** with instant settlement.
-4. **Trust Passport**: An immutable, cryptographically verifiable receipt generated with SHA-256 Merkle fingerprinting and HMAC attestation.
-5. **Autonomous Chargeback Autopsy**: When a dispute arrives, **Google Gemini 1.5 Pro** reconciles the evidence checklist, identifies gaps, drafts a formal merchant defense, and enforces a **mandatory human co-signature** prior to PayPal submission.
+> **Institutional-grade spend governance, cryptographic proof-of-authorization, and automated chargeback defense for autonomous AI agent transactions.**
 
 ---
 
-## 🎯 The Exact MVP Vertical Demonstrated
+## 🌟 Executive Pitch
 
-**Scenario**: A small-business owner authorizes an AI assistant to buy a client appreciation gift.
+As autonomous AI agents acquire the authority to spend money—purchasing SaaS seats, booking client travel, ordering inventory, or spinning up cloud infrastructure—the financial ecosystem faces a critical governance gap:
 
-- **Mandate**:
-  - Purpose: *"Client appreciation gift"*
-  - Maximum Budget: **$80.00 USD**
-  - Allowed Category: `digital gift cards`
-  - Expiry: 24 Hours
-  - Refund Policy: *Refund allowed if purchase is incorrect or unauthorized*
+1. **How do businesses guarantee an AI agent never hallucinates or exceeds authorized budgets?**
+2. **When an autonomous charge is disputed, how does a merchant prove to PayPal that the transaction was legitimate, bounded, and delivered?**
 
-### 🚫 1. The Blocked Attempt
-- Agent proposes: **$120.00 Ergonomic Office Chair**
-- **Outcome**: Passport strictly blocks it. Reason: exceeds $80 cap ($120 > $80) AND category `physical equipment` is outside authorized categories. Logged to tamper-evident audit ledger.
-
-### ✅ 2. The Approved Purchase & PayPal Checkout
-- Agent proposes: **$75.00 Starbucks Digital e-Gift Card**
-- **Outcome**: Passport validates proposal &rarr; Calls PayPal Orders v2 API &rarr; Captures $75.00 order with **PayPal Seller Protection: ELIGIBLE** &rarr; Issues Trust Passport `PASS-2026-8942-US`.
-
-### 🛡️ 3. The Dispute & Chargeback Autopsy
-- A dispute arrives (`CUSTOMER.DISPUTE.CREATED`) claiming "Unauthorized Transaction".
-- Passport runs **Chargeback Autopsy**:
-  - Classifies claim with 96% confidence (`COMPELLING_EVIDENCE_DIGITAL_DELIVERY`).
-  - Pre-assembles 5-of-5 evidence proofs (Mandate snapshot, PayPal capture receipt, Gemini inference transcript, digital delivery proof, merchant terms).
-  - Identifies evidence gaps and mitigations.
-  - Generates a compelling defense letter to PayPal.
-  - **Human Co-Signature Approval**: Enforces small-business owner co-signature before sending defense payload to PayPal Disputes API.
+**Passport** is the trust and defense infrastructure for the agentic economy. It provides:
+- **Deterministic Spend Mandates**: Human-authored, code-enforced boundaries restricting purpose, budget caps, allowed vendor categories, and time-to-live.
+- **Pre-Spend Policy Gates**: Every agent proposal is evaluated deterministically before payment execution. Out-of-bounds purchases (e.g. an unauthorized $120 chair when given an $80 gift card mandate) are rejected at the code level.
+- **PayPal Orders v2 Settlement**: Authorized proposals are routed directly to PayPal Orders v2 for instant capture with **PayPal Seller Protection: ELIGIBLE**.
+- **Cryptographic Trust Passports**: Every settled transaction mints an immutable, portable digital credential (`PASS-2026-XXXX`) containing SHA-256 Merkle hashes of the authorization, transaction receipt, agent inference reasoning, and merchant terms.
+- **Autonomous Dispute Autopsy Room**: Incoming chargeback webhooks (`CUSTOMER.DISPUTE.CREATED`) trigger a **Google Gemini 1.5 Pro** forensic autopsy that analyzes claims, reconciles evidence, drafts a formal defense, and enforces **human co-signature** prior to PayPal submission.
 
 ---
 
-## 🚀 Quickstart & Setup
+## 🎯 The Core Problem
 
-### Prerequisites
-- Node.js 18+ (tested on Node 20 / 24)
-- `pnpm` or `npm`
-
-### 1. Clone & Install Dependencies
-```bash
-cd frontend
-pnpm install
-```
-
-### 2. Configure Environment (Optional)
-A pre-configured `.env` is already provided for instant local evaluation with SQLite:
-```env
-DATABASE_URL="file:./dev.db"
-
-# Optional: Add your live PayPal Sandbox credentials
-PAYPAL_CLIENT_ID=""
-PAYPAL_CLIENT_SECRET=""
-PAYPAL_ENV="sandbox"
-PAYPAL_MCP_URL="https://mcp.sandbox.paypal.com"
-
-# Optional: Add your Google Gemini API key
-GEMINI_API_KEY=""
-
-DEMO_MODE="true"
-```
-
-> 💡 **Judge Note**: If PayPal credentials or Gemini API keys are omitted, Passport automatically runs in **High-Fidelity Simulation Mode** so all flows, order captures, and autopsy forensics work out-of-the-box!
-
-### 3. Initialize & Seed Database
-```bash
-pnpm run db:push
-pnpm run db:seed
-```
-
-### 4. Run Development Server
-```bash
-pnpm run dev
-```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser!
-
----
-
-## 🧭 Application Pages
-
-| Route | Page | Purpose |
-|-------|------|---------|
-| `/` | **Fintech Landing Page** | High-contrast fintech design showcasing problem, architecture, interactive passport card, and security model. |
-| `/demo` | **Guided Demo Tour** | 1-click step-by-step walkthrough of the entire 8-step hackathon narrative. |
-| `/dashboard` | **Operations Dashboard** | Real-time KPIs (spend volume, active mandates, passports, disputes, live audit feed). |
-| `/mandates` | **Spend Mandates** | Mandate ledger + Gemini natural-language authorization parser. |
-| `/purchases` | **Agent Purchase Console** | Interactive test harness: run Approved ($75) vs Blocked ($120) scenarios with real-time policy checks. |
-| `/passports/[id]` | **Trust Passport Detail** | Flagship cryptographic credential with 5 interactive tabs and JSON attestation download. |
-| `/disputes/[id]` | **Chargeback Autopsy** | Forensic evidence checklist, Gemini defense drafting, and human co-signature modal. |
-| `/evidence` | **Evidence Timeline** | High-performance AG Grid-style chronological ledger with CSV export. |
-| `/audit` | **Tamper-Evident Audit Log** | Merkle parent-hash chaining with live 100% integrity verification. |
+| Dimension | The Agentic Vulnerability | The Passport Solution |
+| :--- | :--- | :--- |
+| **Pre-Spend Risk** | LLMs hallucinate parameters, overspend corporate wallets, or stray into unauthorized merchant categories. | Deterministic, non-bypassable pre-spend validator gates proposals against human-signed mandates. |
+| **Receipt Deficit** | Traditional card and PayPal receipts show *what* was billed, but zero proof of *why* an AI agent initiated it or *who* authorized it. | Immutable **Trust Passport** binds the mandate, model prompt, inference trace, and delivery receipts in a SHA-256 Merkle chain. |
+| **Dispute Loss** | "Unauthorized transaction" chargebacks leave merchants defenseless against cardholders claiming an agent acted without consent. | Automated **Dispute Autopsy** proves prior authorization, seller protection eligibility, and digital fulfillment with human co-signature. |
 
 ---
 
 ## ⚙️ Tech Stack
 
-- **Framework**: Next.js 14 (App Router, Server Components)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui-inspired fintech aesthetic
-- **Theming**: Dark & Light mode toggle via `next-themes`
-- **Database**: Prisma ORM with zero-config SQLite (`file:./dev.db`)
-- **Payment Gateway**: PayPal Orders v2 API, Disputes v1 API, Webhooks signature verification, PayPal MCP endpoint (`https://mcp.sandbox.paypal.com`)
-- **AI Engine**: Google Gemini 1.5 Pro (natural language parsing, bounded agent reasoning, chargeback autopsy)
-- **Cryptography**: SHA-256 Merkle chaining, HMAC-SHA256 platform signing
+- **Frontend**: [Next.js 15](https://nextjs.org/) (App Router, React 19, TypeScript, Tailwind CSS, Framer Motion)
+- **Backend API**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) (REST API on port 4000 with byte-accurate raw request stream verification)
+- **Data & ORM**: [Prisma ORM](https://www.prisma.io/) with zero-setup embedded SQLite database
+- **AI Intelligence**: [Google Gemini 1.5 Pro](https://deepmind.google/technologies/gemini/) via `@google/generative-ai` (Natural-language mandate parsing, agent trigger simulation, and forensic chargeback autopsy)
+- **Data Grids**: [AG Grid Community](https://www.ag-grid.com/) (`ag-grid-react`, `ag-grid-community`) with high-density PayPal Quartz theme
+- **Payment & Agent Rails**:
+  - **PayPal Orders v2 API**: `/v2/checkout/orders` (Intent, create, and capture)
+  - **PayPal Agent Toolkit**: [`@paypal/agent-toolkit`](https://www.npmjs.com/package/@paypal/agent-toolkit) for autonomous agent wallet integration
+  - **PayPal Disputes v1 API**: `/v1/customer-disputes` for claim management
+  - **PayPal Webhooks**: Full cryptographic RSA-SHA256 signature verification & CRC-32 payload validation
 
 ---
 
-## 🧪 Running Tests
-To verify the end-to-end proof-of-concept pipeline in one command:
-```bash
-cd frontend
-pnpm run test:poc
+## 🏛️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client["Frontend Application (Next.js 15 — Port 3000)"]
+        UI["Global Control Plane & Dashboard"]
+        SIM["/simulator (Inbound Trigger Simulator)"]
+        DEMO["/demo (1-Click Step-by-Step Walkthrough)"]
+        GRIDS["AG Grid Data Views (/mandates, /audit, /evidence, /disputes)"]
+        PASS["/passports/[id] (Glassmorphic Trust Credential)"]
+        AUTOPSY["/disputes/[id] (Forensic Autopsy & Human Co-Sign)"]
+    end
+
+    subgraph Gateway["Next.js Reverse Proxy"]
+        PROXY["Rewrites: /api/:path* -> http://localhost:4000/api/:path*"]
+    end
+
+    subgraph Backend["Express Core Backend (Port 4000)"]
+        ROUTER["Express API Router"]
+        GATE["Deterministic Mandate Validator"]
+        HASHER["SHA-256 Hasher & Merkle Chain Engine"]
+        VERIFY["PayPal Webhook Verifier (CRC32 + RSA-SHA256)"]
+        AUDIT["Tamper-Evident Audit Logger"]
+    end
+
+    subgraph AI["Google Gemini 1.5 Pro Engine"]
+        GEM_PARSE["Mandate NL Parser"]
+        GEM_AGENT["Agent Trigger Synthesizer"]
+        GEM_AUTOPSY["Chargeback Forensic Autopsy Agent"]
+    end
+
+    subgraph PayPal["PayPal Developer Sandbox"]
+        PP_AUTH["OAuth 2.0 Auth Server"]
+        PP_ORDERS["Orders v2 API (/v2/checkout/orders)"]
+        PP_TOOLKIT["PayPal Agent Toolkit (@paypal/agent-toolkit)"]
+        PP_DISPUTES["Disputes v1 API (/v1/customer-disputes)"]
+        PP_WEBHOOK["Incoming Webhooks (CUSTOMER.DISPUTE.CREATED)"]
+    end
+
+    subgraph Database["Prisma Persistent Storage (SQLite)"]
+        DB[("Mandates · Proposals · Purchases · TrustPassports · Disputes · Evidence · AuditLogs")]
+    end
+
+    UI --> PROXY
+    SIM --> PROXY
+    DEMO --> PROXY
+    GRIDS --> PROXY
+    PASS --> PROXY
+    AUTOPSY --> PROXY
+
+    PROXY --> ROUTER
+
+    ROUTER --> GATE
+    ROUTER --> HASHER
+    ROUTER --> AUDIT
+    ROUTER --> VERIFY
+
+    GATE --> DB
+    HASHER --> DB
+    AUDIT --> DB
+
+    GATE --> GEM_PARSE
+    ROUTER --> GEM_AGENT
+    ROUTER --> GEM_AUTOPSY
+
+    ROUTER --> PP_AUTH
+    ROUTER --> PP_ORDERS
+    ROUTER --> PP_TOOLKIT
+    ROUTER --> PP_DISPUTES
+
+    PP_WEBHOOK --> VERIFY
+    VERIFY --> DB
+    VERIFY --> GEM_AUTOPSY
 ```
 
 ---
 
-## 📄 Documentation Links
-- [System Architecture](docs/architecture.md)
-- [PayPal Integration Guide](docs/paypal-integration.md)
-- [Official Demo Presentation Script](docs/demo-script.md)
-- [Fintech Security Model](docs/security-model.md)
-- [Hackathon Submission Summary](docs/submission.md)
+## 💳 PayPal Integration Details
+
+Passport leverages PayPal's developer ecosystem across four dedicated integration points:
+
+### 1. PayPal Orders v2 API (`/v2/checkout/orders`)
+- **Order Creation**: Automatically configures digital purchase units with `capture` intent, currency code, line item detail, and custom requisition ID (`custom_id`).
+- **Instant Order Capture**: Captures pre-authorized transactions, records `paypalCaptureId`, and extracts `sellerProtectionStatus` (`ELIGIBLE`).
+- **Fallback Simulation**: If live sandbox credentials are omitted, the client smoothly falls back to sandbox simulation, guaranteeing zero broken demos.
+
+### 2. PayPal Agent Toolkit (`@paypal/agent-toolkit`)
+- Integrated into backend purchasing routines to model autonomous wallet interactions and programmatic agent settlement workflows.
+
+### 3. PayPal Disputes v1 API (`/v1/customer-disputes`)
+- Queries incoming dispute data and submits structured merchant evidence packages with cryptographic passport digests.
+
+### 4. Cryptographic Webhook Signature Verification
+Incoming PayPal webhooks are authenticated according to PayPal's official cryptographic specification:
+1. **Header Extraction**: Reads `paypal-transmission-id`, `paypal-transmission-time`, `paypal-cert-url`, `paypal-auth-algo`, and `paypal-transmission-sig`.
+2. **Byte-Accurate CRC-32 Checksum**: Uses Express `verify` middleware to retain raw request payload bytes. Calculates unsigned 32-bit CRC-32 checksum (`zlib.crc32(rawBody) >>> 0`).
+3. **SSRF Defense**: Validates that `paypal-cert-url` uses HTTPS and strictly resolves to a valid `.paypal.com` host domain (`api.paypal.com` or `api.sandbox.paypal.com`).
+4. **Certificate Caching**: Fetches the X.509 public key PEM certificate from PayPal and caches it in memory for 6 hours.
+5. **RSA-SHA256 Verification**: Constructs the string `<transmissionId>|<transmissionTime>|<webhookId>|<crc32>` and validates the base64-encoded transmission signature using Node.js `crypto.createVerify("RSA-SHA256")`.
+6. **Dual Fallback**: If local verification flags a signature issue in sandbox, queries PayPal's `/v1/notifications/verify-webhook-signature` REST endpoint as verification backup.
+
+---
+
+## 🚀 Setup & Installation Instructions
+
+### Prerequisites
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **Package Manager**: `npm` or `pnpm`
+
+---
+
+### Step 1: Backend Setup
+
+1. Open a terminal and navigate to `backend/`:
+   ```bash
+   cd backend
+   ```
+
+2. Install backend dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create your backend environment configuration:
+   ```bash
+   cp .env.example .env
+   ```
+
+   **Required `.env` values in `backend/.env`**:
+   ```env
+   # Server Configuration
+   PORT=4000
+   FRONTEND_URL=http://localhost:3000
+
+   # Database (SQLite default)
+   DATABASE_URL="file:./dev.db"
+
+   # PayPal Sandbox Credentials (https://developer.paypal.com)
+   PAYPAL_CLIENT_ID="your_sandbox_client_id"
+   PAYPAL_CLIENT_SECRET="your_sandbox_client_secret"
+   PAYPAL_ENVIRONMENT="sandbox"
+   PAYPAL_WEBHOOK_ID="your_webhook_id"
+
+   # Google Gemini API Key (https://aistudio.google.com)
+   GEMINI_API_KEY="your_gemini_api_key"
+   ```
+   *(Note: If you leave `PAYPAL_CLIENT_ID` or `GEMINI_API_KEY` blank, Passport automatically activates high-fidelity sandbox simulation mode so all flows remain 100% functional for evaluation.)*
+
+4. Initialize and seed the Prisma database:
+   ```bash
+   npm run prisma:generate
+   npm run prisma:push
+   npm run seed
+   ```
+
+5. Start the backend server:
+   ```bash
+   npm run dev
+   ```
+   *The backend will boot on `http://localhost:4000` (health check: `http://localhost:4000/health`).*
+
+---
+
+### Step 2: Frontend Setup
+
+1. Open a second terminal and navigate to `frontend/`:
+   ```bash
+   cd frontend
+   ```
+
+2. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create your frontend environment configuration:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   **`.env.local` contents**:
+   ```env
+   NEXT_PUBLIC_APP_URL="http://localhost:3000"
+   BACKEND_URL="http://localhost:4000"
+   ```
+
+4. Start the Next.js development server:
+   ```bash
+   npm run dev
+   ```
+   *The frontend will launch at `http://localhost:3000`.*
+
+---
+
+## 🧭 Application Walkthrough & Key Pages
+
+| Route | Page Name | Core Functionality |
+| :--- | :--- | :--- |
+| **`/`** | **Fintech Landing Page** | Stripe/PayPal-inspired aesthetic presenting the problem, security model, and interactive live Trust Passport. |
+| **`/simulator`** | **Agent Trigger Simulator** | Paste arbitrary support tickets or click pre-filled triggers ("Send Client Gift", "Office Chair", "Figma Renewal") to watch Gemini synthesize proposals against active mandates. |
+| **`/dashboard`** | **Command Center** | High-level telemetry, live spend burn gauge, and settled transactions with instant dispute injection simulator. |
+| **`/mandates`** | **Spend Mandates (AG Grid)** | Policy management grid displaying budget caps, category rules, and interactive "Create Mandate" modal with natural-language parsing. |
+| **`/purchases`** | **Purchase Test Console** | Side-by-side verification of the Blocked ($120 chair) vs Approved ($75 gift card) scenarios with real-time rule checks. |
+| **`/passports/[id]`** | **Trust Passport Credential** | Glassmorphic financial document with 5 tabs (Authorization, Settlement, Agent Trail, Receipt, Dispute Bundle), readiness gauge (98/100), and interactive **Verify Attestation Seal** scanner. |
+| **`/disputes`** | **Dispute Room (AG Grid)** | Case table displaying active chargebacks, evidence ratios, deadlines, and direct entry into the Autopsy Room. |
+| **`/disputes/[id]`** | **Dispute Autopsy Room** | Gemini claim classification, 5-point evidence checklist, automated defense letter, and **Human Co-Signature Modal** before submission. |
+| **`/evidence`** | **Evidence Timeline (AG Grid)** | Chronological ledger of TLS session proofs, capture receipts, and agent traces with RFC 4180 CSV export. |
+| **`/audit`** | **Merkle Audit Ledger (AG Grid)** | Cryptographic parent-hash chain with live 100% Merkle tree verification. |
+| **`/demo`** | **Guided Demo Tour** | 1-click 8-step interactive narrative designed for presentation and evaluation. |
+
+---
+
+## 🏆 Hackathon Sponsor Prize Alignment
+
+- **PayPal Ecosystem Integration**: End-to-end utilization of PayPal Orders v2 capture with seller protection, PayPal Disputes v1 evidence submission, `@paypal/agent-toolkit`, and cryptographic webhook signature verification with CRC-32.
+- **AG Grid Integration**: Seamless implementation of AG Grid (`ag-grid-community` & `ag-grid-react`) across four primary operational surfaces (`/mandates`, `/disputes`, `/evidence`, `/audit`) with custom dark/light quartz theming, responsive flex columns, and custom cell renderers.
+- **Google Gemini 1.5 Pro**: Deep agent integration for natural language mandate boundary creation, inbound ticket trigger parsing, and autonomous chargeback autopsy defense assembly.
 
 ---
 
 ## ⚖️ License
-MIT License. Created for the PayPal AI Hackathon 2026.
+MIT License. Developed for the PayPal AI Hackathon 2026.
