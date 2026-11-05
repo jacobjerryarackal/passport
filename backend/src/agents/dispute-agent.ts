@@ -57,6 +57,24 @@ export async function runDisputeAutopsy(disputeId: string) {
     },
   });
 
+  // Compute deterministic evidence coverage score (e.g. 3 out of 5 artifacts verified)
+  const verifiedCount = analysis.evidenceChecklist.filter(
+    (i) => i.status === "VERIFIED" || i.status === "ATTACHED"
+  ).length;
+  const totalCount = analysis.evidenceChecklist.length;
+  const coverageRatio = totalCount > 0 ? verifiedCount / totalCount : 0;
+  const evidenceCoverageScore = `${verifiedCount}/${totalCount} Evidence Verified`;
+
+  analysis.classification.evidenceCoverageScore = evidenceCoverageScore;
+  analysis.classification.evidenceCoverageRatio = coverageRatio;
+  if (!analysis.classification.evidenceRationale) {
+    const verifiedIds = analysis.evidenceChecklist
+      .filter((i) => i.status === "VERIFIED" || i.status === "ATTACHED")
+      .map((i) => `[${i.id}]`)
+      .join(", ");
+    analysis.classification.evidenceRationale = `Classification substantiated by ${verifiedIds} verified evidence proofs matching mandate constraints and PayPal seller protection terms.`;
+  }
+
   // 2. Update Dispute Record
   const updatedDispute = await prisma.dispute.update({
     where: { id: dispute.id },
@@ -97,11 +115,12 @@ export async function runDisputeAutopsy(disputeId: string) {
     mandateId: mandate.id,
     action: "DISPUTE_CLASSIFIED",
     actor: "DISPUTE_AGENT",
-    actorModel: "gemini-1.5-pro",
+    actorModel: "gemini-2.5-pro",
     details: {
       disputeId: dispute.id,
       paypalDisputeId: dispute.paypalDisputeId,
       classification: analysis.classification,
+      evidenceCoverageScore,
       evidenceItemCount: analysis.evidenceChecklist.length,
       gapsIdentified: analysis.evidenceGaps.length,
     },

@@ -168,7 +168,7 @@ router.post("/demo", async (req: Request, res: Response) => {
       const proposal = await prisma.purchaseProposal.create({
         data: {
           mandateId: mandate.id,
-          agentModel: "gemini-1.5-pro",
+          agentModel: "gemini-2.5-pro",
           itemName: "Executive Hospitality Welcome Package",
           itemCategory: "digital gift cards",
           amount: 75.0,
@@ -222,7 +222,7 @@ router.post("/demo", async (req: Request, res: Response) => {
             amount: `$${createdPurchase.amount.toFixed(2)}`,
           }),
           agentTrailData: JSON.stringify({
-            model: "gemini-1.5-pro",
+            model: "gemini-2.5-pro",
             promptTrigger: "Simulated client onboarding requisition",
           }),
           refundEligibility: JSON.stringify({
@@ -266,7 +266,7 @@ router.post("/demo", async (req: Request, res: Response) => {
             amount: `$${purchase!.amount.toFixed(2)}`,
           }),
           agentTrailData: JSON.stringify({
-            model: "gemini-1.5-pro",
+            model: "gemini-2.5-pro",
           }),
           refundEligibility: JSON.stringify({
             eligible: true,

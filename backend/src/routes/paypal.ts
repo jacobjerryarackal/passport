@@ -15,7 +15,7 @@ router.get("/status", async (_req: Request, res: Response) => {
       paypal,
       gemini: {
         configured: geminiConfigured,
-        model: "gemini-1.5-pro",
+        model: "gemini-2.5-pro",
       },
       demoMode: process.env.DEMO_MODE === "true" || !paypal.configured,
     });

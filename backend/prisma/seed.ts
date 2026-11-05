@@ -97,7 +97,7 @@ async function main() {
     data: {
       id: "prop-starbucks-75",
       mandateId: mandate.id,
-      agentModel: "gemini-1.5-pro",
+      agentModel: "gemini-2.5-pro",
       itemName: "Starbucks Digital e-Gift Card ($75)",
       itemCategory: "digital gift cards",
       amount: 75.0,
@@ -199,7 +199,7 @@ async function main() {
         sellerProtection: "ELIGIBLE",
       }),
       agentTrailData: JSON.stringify({
-        agentModel: "gemini-1.5-pro",
+        agentModel: "gemini-2.5-pro",
         reasoning: proposal.reasoning,
         boundaryChecks: "3 of 3 Passed",
       }),

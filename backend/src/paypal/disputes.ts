@@ -110,15 +110,26 @@ export async function submitDisputeEvidence(params: {
 }): Promise<{ success: boolean; disputeId: string; submittedAt: string; isSimulated: boolean }> {
   const isConfigured = isPayPalConfigured();
 
-  const payload = {
+  // 1. Verify dispute status is WAITING_FOR_SELLER_RESPONSE before submitting
+  const disputeLookup = await getPayPalDispute(params.disputeId);
+  const currentStatus = disputeLookup.dispute?.status || "WAITING_FOR_SELLER_RESPONSE";
+  if (currentStatus !== "WAITING_FOR_SELLER_RESPONSE") {
+    throw new Error(
+      `Cannot submit evidence: Dispute status is "${currentStatus}". Evidence can only be submitted when status is "WAITING_FOR_SELLER_RESPONSE".`
+    );
+  }
+
+  // 2. Build official PayPal multipart/related evidence payload
+  const boundary = `----PayPalDisputeEvidence${Date.now().toString(16)}`;
+  const evidencePayload = {
     evidences: [
       {
-        evidence_type: "PROOF_OF_FULFILLMENT",
+        evidence_type: params.evidenceType || "PROOF_OF_FULFILLMENT",
         evidence_info: {
           tracking_info: [
             {
               carrier_name: "DIGITAL_DELIVERY",
-              tracking_number: `PASS-HASH-${params.evidenceItems[0]?.hash.slice(0, 16) || "PROOF"}`,
+              tracking_number: `PASS-HASH-${params.evidenceItems[0]?.hash?.slice(0, 16) || "PROOF"}`,
             },
           ],
         },
@@ -126,6 +137,17 @@ export async function submitDisputeEvidence(params: {
       },
     ],
   };
+
+  const bodyParts = [
+    `--${boundary}`,
+    'Content-Disposition: form-data; name="input"',
+    'Content-Type: application/json; charset=UTF-8',
+    '',
+    JSON.stringify(evidencePayload),
+    `--${boundary}--`,
+    '',
+  ];
+  const multipartBody = bodyParts.join("\r\n");
 
   if (!isConfigured || params.disputeId.startsWith("PP-D-849201")) {
     return {
@@ -136,9 +158,13 @@ export async function submitDisputeEvidence(params: {
     };
   }
 
+  // 3. Raw REST call to POST /v1/customer/disputes/{disputeId}/provide-evidence
   const res = await paypalFetch(`/v1/customer/disputes/${params.disputeId}/provide-evidence`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": `multipart/related; boundary=${boundary}`,
+    },
+    body: multipartBody,
   });
 
   return {

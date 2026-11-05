@@ -29,7 +29,8 @@ export interface Mandate {
   expiryHours: number;
   expiresAt: string;
   refundPolicy: string;
-  status: string; // ACTIVE, EXHAUSTED, EXPIRED
+  status: string; // ACTIVE, EXHAUSTED, EXPIRED, REVOKED
+  revoked?: boolean;
   spentAmount?: number;
   createdAt?: string;
   purchases?: Array<{ id: string; amount: number; status: string }>;
@@ -178,6 +179,24 @@ export default function MandatesPage() {
       console.error("Creation error:", err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleRevokeMandate = async (id: string, title: string) => {
+    if (!confirm(`Activate emergency kill switch for "${title}"?\n\nThis immediately revokes all agent spending permissions under this mandate.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/mandates/${id}/revoke`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Emergency kill switch activated by administrator" }),
+      });
+      if (res.ok) {
+        fetchMandates();
+      }
+    } catch (err) {
+      console.error("Revocation error:", err);
     }
   };
 
@@ -338,15 +357,18 @@ export default function MandatesPage() {
             );
           }
           const burnRatio = mandate.maxAmount > 0 ? (spent / mandate.maxAmount) * 100 : 0;
-          const isExhausted = mandate.status === "EXHAUSTED" || burnRatio >= 100;
-          const isActive = mandate.status === "ACTIVE";
+          const isRevoked = mandate.revoked || mandate.status === "REVOKED";
+          const isExhausted = !isRevoked && (mandate.status === "EXHAUSTED" || burnRatio >= 100);
+          const isActive = !isRevoked && !isExhausted && mandate.status === "ACTIVE";
 
           return (
             <div className="flex items-center h-full">
               <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isExhausted
+                    isRevoked
+                      ? "bg-rose-500"
+                      : isExhausted
                       ? "bg-amber-500"
                       : isActive
                       ? "bg-[#007A56] dark:bg-emerald-400"
@@ -355,16 +377,48 @@ export default function MandatesPage() {
                 />
                 <span
                   className={
-                    isExhausted
+                    isRevoked
+                      ? "text-rose-600 dark:text-rose-400 font-black"
+                      : isExhausted
                       ? "text-amber-600 dark:text-amber-400"
                       : isActive
                       ? "text-[#007A56] dark:text-emerald-400"
                       : "text-[#6C7378] dark:text-white/50"
                   }
                 >
-                  {isExhausted ? "EXHAUSTED" : mandate.status}
+                  {isRevoked ? "REVOKED" : isExhausted ? "EXHAUSTED" : mandate.status}
                 </span>
               </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Action",
+        field: "id",
+        minWidth: 120,
+        flex: 0.8,
+        cellRenderer: (params: any) => {
+          const mandate = params.data as Mandate;
+          if (!mandate) return null;
+          const isRevoked = mandate.revoked || mandate.status === "REVOKED";
+          if (isRevoked) {
+            return (
+              <div className="flex items-center h-full">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold text-rose-500 bg-rose-500/10 border border-rose-500/20">
+                  REVOKED
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div className="flex items-center h-full">
+              <button
+                onClick={() => handleRevokeMandate(mandate.id, mandate.title)}
+                className="px-3 py-1 rounded-full text-[11px] font-display font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20 shadow-sm"
+              >
+                Revoke
+              </button>
             </div>
           );
         },

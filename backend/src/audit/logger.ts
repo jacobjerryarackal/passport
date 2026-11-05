@@ -8,6 +8,7 @@ export type AuditAction =
   | "PURCHASE_PROPOSED"
   | "VALIDATION_PASSED"
   | "VALIDATION_BLOCKED"
+  | "STEP_UP_APPROVED"
   | "PAYPAL_ORDER_CREATED"
   | "PAYPAL_ORDER_CAPTURED"
   | "PASSPORT_ISSUED"
@@ -20,6 +21,7 @@ export type AuditAction =
 
 export type AuditActor =
   | "HUMAN_ADMIN"
+  | "ACCOUNT_OWNER"
   | "PURCHASE_AGENT"
   | "SYSTEM_VALIDATOR"
   | "PAYPAL_API"

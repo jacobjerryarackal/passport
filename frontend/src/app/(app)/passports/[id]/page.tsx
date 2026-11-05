@@ -315,7 +315,7 @@ export default function PassportDetailPage() {
               >
                 <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 space-y-2 font-mono">
                   <div className="flex items-center justify-between text-xs font-bold text-[#002991] dark:text-[#60CDFF]">
-                    <span>Agent Model: gemini-1.5-pro</span>
+                    <span>Agent Model: gemini-2.5-pro</span>
                     <span className="text-[#6C7378] dark:text-white/40">Timestamp: 18:29:12 UTC</span>
                   </div>
                   <div className="text-xs text-[#1D1E20] dark:text-white/90 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 leading-relaxed">

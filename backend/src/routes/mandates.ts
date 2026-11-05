@@ -84,6 +84,51 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/mandates/:id/revoke
+router.post("/:id/revoke", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason = "Manual administrator emergency revocation" } = req.body;
+
+    const mandate = await prisma.mandate.findUnique({
+      where: { id },
+    });
+
+    if (!mandate) {
+      return res.status(404).json({ error: `Mandate ${id} not found` });
+    }
+
+    const updatedMandate = await prisma.mandate.update({
+      where: { id },
+      data: {
+        revoked: true,
+        status: "REVOKED",
+      },
+    });
+
+    await logAuditEvent({
+      mandateId: mandate.id,
+      action: "MANDATE_REVOKED",
+      actor: "HUMAN_ADMIN",
+      actorModel: "kill-switch-trigger",
+      details: {
+        revokedAt: new Date().toISOString(),
+        reason,
+        previousStatus: mandate.status,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: `Mandate ${mandate.title} (${id}) has been immediately revoked by emergency kill switch.`,
+      mandate: updatedMandate,
+    });
+  } catch (err) {
+    console.error("POST /api/mandates/:id/revoke error:", err);
+    return res.status(500).json({ error: "Failed to revoke mandate" });
+  }
+});
+
 // POST /api/mandates/parse
 router.post("/parse", async (req: Request, res: Response) => {
   try {

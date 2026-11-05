@@ -20,6 +20,7 @@ model Mandate {
   expiresAt         DateTime
   refundPolicy      String
   status            String             @default("ACTIVE") // ACTIVE, EXPIRED, EXHAUSTED, REVOKED
+  revoked           Boolean            @default(false)
   rawPrompt         String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -34,7 +35,7 @@ model PurchaseProposal {
   id                String    @id @default(uuid())
   mandateId         String
   mandate           Mandate   @relation(fields: [mandateId], references: [id], onDelete: Cascade)
-  agentModel        String    @default("gemini-1.5-pro")
+  agentModel        String    @default("gemini-2.5-pro")
   itemName          String
   itemCategory      String
   amount            Float

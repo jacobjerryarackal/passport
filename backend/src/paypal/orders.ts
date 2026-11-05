@@ -9,6 +9,8 @@ export interface CreateOrderParams {
   category: string;
   recipient: string;
   mcpSessionId?: string;
+  passportId?: string;
+  mandateHash?: string;
 }
 
 export interface PayPalOrderResponse {
@@ -53,6 +55,10 @@ export interface PayPalOrderResponse {
 
 export async function createPayPalOrder(params: CreateOrderParams): Promise<PayPalOrderResponse> {
   const isConfigured = isPayPalConfigured();
+  const passportId = params.passportId || `PASS-${Date.now().toString().slice(-6)}`;
+  const mandateHash = params.mandateHash || crypto.createHash("sha256").update(params.mandateId).digest("hex").slice(0, 32);
+  // custom_id attaches the Trust Passport ID and SHA-256 mandate hash for two-sided merchant verification
+  const customId = `${passportId}:${mandateHash}`;
 
   if (!isConfigured) {
     const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
@@ -63,7 +69,7 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
       purchase_units: [
         {
           reference_id: "default",
-          custom_id: params.mandateId,
+          custom_id: customId,
           description: `AI Agent Authorized: ${params.itemName}`,
           amount: {
             currency_code: params.currency || "USD",
@@ -96,7 +102,7 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
     purchase_units: [
       {
         reference_id: `mandate-${params.mandateId}`,
-        custom_id: params.mandateId,
+        custom_id: customId,
         description: `Agent Spend: ${params.itemName} (${params.category})`,
         amount: {
           currency_code: params.currency || "USD",

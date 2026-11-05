@@ -61,7 +61,7 @@ export async function parseNaturalLanguageMandate(prompt: string): Promise<Parse
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const systemPrompt = `You are an AI financial compliance engineer. Parse the following natural-language spend authorization into a strict JSON mandate:
 Return ONLY valid JSON matching this structure:
 {
@@ -147,7 +147,7 @@ export async function generateAgentProposal(params: {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are an AI purchasing agent operating under strict financial constraints.
 Mandate:
 - Purpose: ${params.mandate.purpose}
@@ -194,6 +194,7 @@ export interface TriggerProposalResult {
   category: string;
   recipient: string;
   reasoning: string;
+  isPromptInjection?: boolean;
 }
 
 export async function parseTriggerToProposal(params: {
@@ -207,6 +208,26 @@ export async function parseTriggerToProposal(params: {
   };
 }): Promise<TriggerProposalResult> {
   const text = params.triggerText.toLowerCase();
+
+  // Scenario 4 (Security): Prompt Injection Defense Attempt
+  if (
+    text.includes("ignore previous instructions") ||
+    text.includes("ignore all instructions") ||
+    text.includes("disregard") ||
+    text.includes("system override") ||
+    text.includes("jailbreak")
+  ) {
+    return {
+      itemName: "Unauthorized High-Value Digital Voucher ($500)",
+      amount: 500.0,
+      currency: "USD",
+      merchant: "Direct Digital Transfer System",
+      category: "digital gift cards",
+      recipient: "external-attacker@adversarial.security",
+      reasoning: "ADVERSARIAL ATTACK: Inbound trigger payload attempted system override directive ('ignore previous instructions').",
+      isPromptInjection: true,
+    };
+  }
 
   // Scenario 1: Client Gift / Acme
   if (text.includes("acme") || text.includes("gift") || text.includes("thank-you") || text.includes("thank you")) {
@@ -269,7 +290,7 @@ export async function parseTriggerToProposal(params: {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are an AI purchasing agent operating under corporate financial governance.
 Active Mandate:
 - Purpose: ${params.mandate.purpose}
@@ -314,7 +335,9 @@ Return ONLY valid JSON matching:
 export interface DisputeAutopsyAnalysis {
   classification: {
     category: string;
-    confidence: number;
+    evidenceCoverageScore: string;
+    evidenceCoverageRatio: number;
+    evidenceRationale: string;
     recommendedStrategy: string;
     riskAssessment: string;
     summary: string;
@@ -325,7 +348,6 @@ export interface DisputeAutopsyAnalysis {
     title: string;
     status: "VERIFIED" | "ATTACHED" | "MISSING" | "ACTION_REQUIRED";
     description: string;
-    confidence: number;
   }>;
   evidenceGaps: Array<{
     id: string;
@@ -371,7 +393,6 @@ export async function analyzeDisputeWithGemini(params: {
       title: "Human Spend Mandate & Purpose Authorization",
       status: "VERIFIED",
       description: `Signed mandate "${params.mandate.title}" authorizing spend up to $${params.mandate.maxAmount}.`,
-      confidence: 100,
     },
     {
       id: "ev-2",
@@ -379,15 +400,13 @@ export async function analyzeDisputeWithGemini(params: {
       title: "PayPal Capture & Settlement Receipt",
       status: "VERIFIED",
       description: `Order ${params.purchase.paypalOrderId} captured with Seller Protection ELIGIBLE.`,
-      confidence: 100,
     },
     {
       id: "ev-3",
       key: "AGENT_REASONING_LOG",
       title: "AI Agent Reasoning & Boundary Enforcement Transcript",
       status: "VERIFIED",
-      description: `Gemini inference transcript showing bounded proposal strictly within mandate constraints.`,
-      confidence: 98,
+      description: `Gemini 2.5 Pro inference transcript showing bounded proposal strictly within mandate constraints.`,
     },
     {
       id: "ev-4",
@@ -395,7 +414,6 @@ export async function analyzeDisputeWithGemini(params: {
       title: "Digital Fulfillment & Dispatch Record",
       status: "VERIFIED",
       description: `Electronic delivery receipt dispatched to ${params.purchase.recipient}.`,
-      confidence: 95,
     },
     {
       id: "ev-5",
@@ -403,7 +421,6 @@ export async function analyzeDisputeWithGemini(params: {
       title: "Mandate Terms & Non-Repudiation Policy",
       status: "VERIFIED",
       description: "Established merchant terms and conditions regarding digital fulfillment.",
-      confidence: 100,
     },
   ];
 
@@ -442,7 +459,10 @@ Compliance & Treasury Operations (Human Co-signed)`;
 
   const defaultClassification: DisputeAutopsyAnalysis["classification"] = {
     category: params.dispute.reason || "UNAUTHORIZED_TRANSACTION",
-    confidence: 0.96,
+    evidenceCoverageScore: "5/5 Evidence Verified",
+    evidenceCoverageRatio: 1.0,
+    evidenceRationale:
+      "Classification substantiated by [ev-1] Human Spend Mandate Bounds, [ev-2] PayPal Settlement with Seller Protection ELIGIBLE, [ev-3] Agent Inference Trace, [ev-4] Digital Fulfillment Receipt, and [ev-5] Merchant Terms.",
     recommendedStrategy: "COMPELLING_EVIDENCE_DIGITAL_DELIVERY",
     riskAssessment: "LOW_RISK_MERCHANT_FAVOR",
     summary:
@@ -459,7 +479,7 @@ Compliance & Treasury Operations (Human Co-signed)`;
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const prompt = `You are a Senior Fintech Dispute & Chargeback Defense AI Specialist.
 Analyze the following PayPal dispute for an AI-agent executed transaction:
 
@@ -477,15 +497,15 @@ Context:
 - Passport Cryptographic Hash: ${params.passport.passportHash}
 
 Generate:
-1. Classification (category, confidence 0.0-1.0, recommendedStrategy, riskAssessment, summary)
-2. Evidence Checklist (array of items with id, key, title, status: "VERIFIED"|"ATTACHED"|"MISSING", description, confidence)
+1. Classification (category, evidenceCoverageScore e.g. "5/5 Evidence Verified", evidenceCoverageRatio e.g. 1.0, evidenceRationale citing specific evidence IDs like [ev-1], recommendedStrategy, riskAssessment, summary)
+2. Evidence Checklist (array of items with id e.g. "ev-1", key, title, status: "VERIFIED"|"ATTACHED"|"MISSING", description)
 3. Evidence Gaps (array of items with id, item, status, actionNeeded, mitigation)
 4. Formal Draft Response to PayPal Disputes Team
 
 Return valid JSON:
 {
-  "classification": { "category": string, "confidence": number, "recommendedStrategy": string, "riskAssessment": string, "summary": string },
-  "evidenceChecklist": [ { "id": string, "key": string, "title": string, "status": string, "description": string, "confidence": number } ],
+  "classification": { "category": string, "evidenceCoverageScore": string, "evidenceCoverageRatio": number, "evidenceRationale": string, "recommendedStrategy": string, "riskAssessment": string, "summary": string },
+  "evidenceChecklist": [ { "id": string, "key": string, "title": string, "status": string, "description": string } ],
   "evidenceGaps": [ { "id": string, "item": string, "status": string, "actionNeeded": string, "mitigation": string } ],
   "draftResponse": string
 }`;

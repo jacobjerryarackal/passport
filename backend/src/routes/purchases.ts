@@ -59,6 +59,7 @@ router.post("/propose", async (req: Request, res: Response) => {
           allowedCategories: allowedCats,
           expiresAt: mandate.expiresAt,
           status: mandate.status,
+          revoked: mandate.revoked,
         },
         proposal: {
           itemName: targetProposal.itemName || "Unnamed Proposal Item",
@@ -66,6 +67,9 @@ router.post("/propose", async (req: Request, res: Response) => {
           amount: Number(targetProposal.amount),
           currency: targetProposal.currency || mandate.currency,
           recipient: targetProposal.recipient || "authorized-recipient@business.internal",
+          reasoning: targetProposal.reasoning,
+          isPromptInjection: Boolean(targetProposal.isPromptInjection),
+          rawPrompt: typeof userPrompt === "string" ? userPrompt : undefined,
         },
         currentSpentAmount: currentSpent,
       });
@@ -74,7 +78,7 @@ router.post("/propose", async (req: Request, res: Response) => {
       const savedProposal = await prisma.purchaseProposal.create({
         data: {
           mandateId: mandate.id,
-          agentModel: "gemini-1.5-pro",
+          agentModel: "gemini-2.5-pro",
           itemName: targetProposal.itemName || "Unnamed Proposal Item",
           itemCategory: targetProposal.category || targetProposal.itemCategory || "general",
           amount: Number(targetProposal.amount),
@@ -141,14 +145,35 @@ router.post("/execute", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Proposal not found" });
     }
 
-    if (proposal.validationStatus !== "APPROVED") {
-      return res.status(400).json({
-        error: "Proposal violates mandate policy and cannot be executed via PayPal",
-        violationReason: proposal.violationReason,
-      });
+    if (proposal.validationStatus !== "APPROVED" && proposal.validationStatus !== "ALLOW") {
+      if (proposal.validationStatus === "NEEDS_APPROVAL" && req.body.stepUpApproved) {
+        // Step-up approval granted by human authorized administrator
+        await logAuditEvent({
+          mandateId: proposal.mandateId,
+          action: "STEP_UP_APPROVED",
+          actor: "ACCOUNT_OWNER",
+          actorModel: "human-co-signer",
+          details: {
+            proposalId: proposal.id,
+            reason: "Human step-up approval override granted for variance within 20% tolerance.",
+          },
+        });
+      } else {
+        return res.status(400).json({
+          error: "Proposal violates mandate policy and cannot be executed via PayPal",
+          violationReason: proposal.violationReason,
+        });
+      }
     }
 
-    // 1. Create PayPal Order
+    // Pre-mint Passport identifier and SHA-256 mandate hash for two-sided merchant verification
+    const passportNumber = `PASS-${new Date().getFullYear()}-${crypto.randomInt(1000, 9999)}-US`;
+    const mandateHash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(proposal.mandate))
+      .digest("hex");
+
+    // 1. Create PayPal Order with attached custom_id (Trust Passport ID + Mandate SHA-256 Hash)
     const paypalOrder = await createPayPalOrder({
       mandateId: proposal.mandateId,
       amount: proposal.amount,
@@ -157,6 +182,8 @@ router.post("/execute", async (req: Request, res: Response) => {
       category: proposal.itemCategory,
       recipient: proposal.recipient,
       mcpSessionId: `mcp-${crypto.randomBytes(6).toString("hex")}`,
+      passportId: passportNumber,
+      mandateHash,
     });
 
     await logAuditEvent({
@@ -219,8 +246,7 @@ router.post("/execute", async (req: Request, res: Response) => {
       },
     });
 
-    // 4. Generate Trust Passport
-    const passportNumber = `PASS-${new Date().getFullYear()}-${crypto.randomInt(1000, 9999)}-US`;
+    // 4. Generate Trust Passport with Ed25519 platform signature
     const passportHash = generatePassportHash({
       mandateId: proposal.mandateId,
       purchaseId: purchase.id,

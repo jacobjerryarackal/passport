@@ -80,7 +80,7 @@ export default function DisputeAutopsyPage() {
       description: "Gemini 1.5 Pro prompt execution trail proving autonomous requisition within bounds.",
       status: "VERIFIED",
       hash: "sha256:4a8f9c0e21b3d5e7f9a1c3e5a7b9d1f3e5a7b9c1d3e5f7a9b1c3e5a7b9d1f3e5",
-      source: "GEMINI_1_5_PRO",
+      source: "GEMINI_2_5_PRO",
       timestamp: "Today, 18:29 UTC",
     },
     {
@@ -192,15 +192,29 @@ export default function DisputeAutopsyPage() {
                 UNAUTHORIZED TRANSACTION
               </div>
 
-              {/* High Confidence Score in Sky-Blue */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#60CDFF]/20 text-[#002991] dark:text-[#60CDFF] border border-[#60CDFF]/30">
-                <span>96% CONFIDENCE</span>
-                <span>· GEMINI 1.5 PRO</span>
+              {/* Deterministic Evidence Coverage Score & Segmented Bar */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="font-bold text-[#002991] dark:text-[#60CDFF]">
+                    EVIDENCE COVERAGE: 3/5 VERIFIED
+                  </span>
+                  <span className="text-[#6C7378] dark:text-white/50 text-[11px]">
+                    GEMINI 2.5 PRO
+                  </span>
+                </div>
+
+                {/* 5-segment indicator bar */}
+                <div className="grid grid-cols-5 gap-1.5 w-full">
+                  <div className="h-2 rounded-full bg-[#007A56] dark:bg-emerald-400" title="[ev-01] Human Mandate: Verified" />
+                  <div className="h-2 rounded-full bg-[#007A56] dark:bg-emerald-400" title="[ev-02] PayPal Capture: Verified" />
+                  <div className="h-2 rounded-full bg-[#007A56] dark:bg-emerald-400" title="[ev-03] Agent Reasoning: Verified" />
+                  <div className="h-2 rounded-full bg-black/10 dark:bg-white/10" title="[ev-04] Merchant Delivery: Pending" />
+                  <div className="h-2 rounded-full bg-black/10 dark:bg-white/10" title="[ev-05] Co-Signature: Pending" />
+                </div>
               </div>
 
               <p className="text-xs text-[#6C7378] dark:text-white/70 leading-relaxed font-mono pt-1">
-                Cardholder claims digital charge was unrecognized. PayPal Orders v2 telemetry confirms
-                transaction was pre-authorized within human spend mandate bounds and executed via agent wallet.
+                Cardholder claims digital charge was unrecognized. Forensic audit cross-checks [ev-01] human spend mandate bounds ($80 cap) against [ev-02] PayPal Orders v2 capture ($75 settled) and [ev-03] agent deterministic reasoning logs. 3 of 5 defense proofs cryptographically verified.
               </p>
             </div>
 

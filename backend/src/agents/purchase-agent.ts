@@ -50,6 +50,7 @@ export async function runPurchaseAgent(params: {
       allowedCategories: allowedCats,
       expiresAt: mandate.expiresAt,
       status: mandate.status,
+      revoked: mandate.revoked,
     },
     proposal: rawProposal,
     currentSpentAmount: currentSpent,
@@ -59,7 +60,7 @@ export async function runPurchaseAgent(params: {
   const savedProposal = await prisma.purchaseProposal.create({
     data: {
       mandateId: mandate.id,
-      agentModel: "gemini-1.5-pro",
+      agentModel: "gemini-2.5-pro",
       itemName: rawProposal.itemName,
       itemCategory: rawProposal.itemCategory,
       amount: rawProposal.amount,
