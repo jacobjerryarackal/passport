@@ -68,23 +68,23 @@ export function validateProposalAgainstMandate(input: MandateValidationInput): V
     violations.push(`Mandate expired on ${expiryDate.toLocaleString()}`);
   }
 
-  // 3. Amount & Cumulative Cap Check
+  // 3. Amount & Cap Check
   const effectiveAmount = Number(proposal.amount);
   const maxAllowed = Number(mandate.maxAmount);
-  const projectedTotal = currentSpentAmount + effectiveAmount;
-  const isAmountValid = effectiveAmount <= maxAllowed && projectedTotal <= maxAllowed;
+  // A proposal is only blocked if proposalAmount > mandateMaxAmount (allowing amounts <= cap)
+  const isAmountValid = effectiveAmount <= maxAllowed;
 
   checks.amountCheck = {
     name: "Budget Cap Check",
     passed: isAmountValid,
     message: isAmountValid
       ? `Proposal amount $${effectiveAmount.toFixed(2)} is within authorized mandate cap of $${maxAllowed.toFixed(2)}`
-      : `Proposal amount $${effectiveAmount.toFixed(2)} exceeds authorized mandate cap of $${maxAllowed.toFixed(2)} (Spent so far: $${currentSpentAmount.toFixed(2)})`,
+      : `Proposal amount $${effectiveAmount.toFixed(2)} exceeds authorized mandate cap of $${maxAllowed.toFixed(2)}`,
     details: {
       proposalAmount: effectiveAmount,
       mandateMaxAmount: maxAllowed,
       currentSpent: currentSpentAmount,
-      projectedTotal,
+      projectedTotal: currentSpentAmount + effectiveAmount,
     },
   };
   if (!isAmountValid) {

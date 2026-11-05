@@ -391,6 +391,7 @@ export function DashboardClient({
           <DataGrid<SettledTransaction>
             rowData={transactions}
             columnDefs={transactionColumnDefs}
+            rowHeight={64}
             pagination={true}
             paginationPageSize={10}
             domLayout="autoHeight"

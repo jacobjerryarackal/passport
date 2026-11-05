@@ -228,6 +228,7 @@ export default function AuditLogPage() {
         <DataGrid<AuditLog>
           rowData={filteredLogs}
           columnDefs={auditColumnDefs}
+          rowHeight={64}
           pagination={true}
           paginationPageSize={10}
           domLayout="autoHeight"

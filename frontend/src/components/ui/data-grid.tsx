@@ -15,6 +15,8 @@ export interface DataGridProps<T = any> {
   paginationPageSize?: number;
   paginationPageSizeSelector?: number[] | boolean;
   domLayout?: "autoHeight" | "normal" | "print";
+  rowHeight?: number;
+  headerHeight?: number;
   onRowClicked?: (event: RowClickedEvent<T>) => void;
   className?: string;
   defaultColDef?: ColDef<T>;
@@ -30,6 +32,8 @@ export function DataGrid<T = any>({
   paginationPageSize = 10,
   paginationPageSizeSelector = [10, 20, 50],
   domLayout = "autoHeight",
+  rowHeight = 64,
+  headerHeight = 48,
   onRowClicked,
   className = "",
   defaultColDef,
@@ -75,6 +79,8 @@ export function DataGrid<T = any>({
           rowData={rowData ?? []}
           columnDefs={columnDefs}
           defaultColDef={mergedDefaultColDef}
+          rowHeight={rowHeight}
+          headerHeight={headerHeight}
           pagination={pagination}
           paginationPageSize={paginationPageSize}
           paginationPageSizeSelector={paginationPageSizeSelector}
@@ -95,10 +101,39 @@ export function DataGrid<T = any>({
         .passport-ag-grid {
           --ag-font-family: inherit;
           --ag-font-size: 12px;
-          --ag-header-height: 44px;
-          --ag-row-height: 54px;
+          --ag-header-height: 48px;
+          --ag-row-height: 64px;
           --ag-borders: none;
           --ag-cell-horizontal-padding: 16px;
+        }
+
+        /* Prevent grid rows from overlapping or covering the table headers */
+        .passport-ag-grid .ag-header {
+          position: relative !important;
+          z-index: 2 !important;
+          border-bottom: 1px solid var(--ag-border-color) !important;
+        }
+
+        .passport-ag-grid .ag-header-row {
+          z-index: 2 !important;
+        }
+
+        .passport-ag-grid .ag-body-viewport {
+          position: relative;
+          z-index: 1;
+        }
+
+        .passport-ag-grid .ag-row {
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          transition: background-color 150ms ease;
+        }
+
+        .passport-ag-grid .ag-cell {
+          display: flex;
+          align-items: center;
+          line-height: normal;
         }
 
         /* Light Theme */

@@ -438,6 +438,7 @@ export default function EvidenceTimelinePage() {
       <DataGrid<EvidenceItem>
         rowData={filtered}
         columnDefs={evidenceColumnDefs}
+        rowHeight={64}
         pagination={true}
         paginationPageSize={10}
         domLayout="autoHeight"

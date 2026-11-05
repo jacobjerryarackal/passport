@@ -1,19 +1,17 @@
+"use client";
+
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { ColDef } from "ag-grid-community";
+import { DataGrid } from "@/components/ui/data-grid";
 import {
   AlertOctagon,
   ShieldCheck,
-  CheckCircle2,
   Clock,
   ArrowRight,
-  TrendingUp,
-  FileCheck2,
-  AlertTriangle,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-interface DisputeRecord {
+export interface DisputeRecord {
   id: string;
   paypalDisputeId: string;
   disputeAmount: number;
@@ -25,65 +23,241 @@ interface DisputeRecord {
   dueDate: string;
 }
 
-export default async function DisputesListPage() {
-  let dbDisputes: any[] = [];
+export default function DisputesListPage() {
+  const [disputes, setDisputes] = useState<DisputeRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const res = await fetch("http://localhost:4000/api/disputes", {
-      next: { revalidate: 0 },
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      dbDisputes = data.disputes || [];
+  // Default seeded dispute records
+  const defaultDisputes: DisputeRecord[] = useMemo(
+    () => [
+      {
+        id: "disp-chargeback-demo",
+        paypalDisputeId: "PP-D-849201",
+        disputeAmount: 75.0,
+        currency: "USD",
+        disputeReason: "UNAUTHORIZED_TRANSACTION",
+        verifiedEvidenceCount: 3,
+        totalEvidenceCount: 5,
+        status: "ACTION_REQUIRED",
+        dueDate: "Nov 10, 2026 (5d left)",
+      },
+      {
+        id: "disp-service-not-received",
+        paypalDisputeId: "PP-D-721094",
+        disputeAmount: 42.5,
+        currency: "USD",
+        disputeReason: "MERCHANDISE_NOT_RECEIVED",
+        verifiedEvidenceCount: 5,
+        totalEvidenceCount: 5,
+        status: "CO_SIGNED",
+        dueDate: "Nov 14, 2026 (9d left)",
+      },
+    ],
+    []
+  );
+
+  const fetchDisputes = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/disputes");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.disputes && data.disputes.length > 0) {
+          const mapped: DisputeRecord[] = data.disputes.map((d: any) => ({
+            id: d.id,
+            paypalDisputeId: d.paypalDisputeId,
+            disputeAmount: d.disputeAmount,
+            currency: d.currency || "USD",
+            disputeReason: d.disputeReason || "UNAUTHORIZED_TRANSACTION",
+            verifiedEvidenceCount:
+              d.evidenceItems?.filter((e: any) => e.status === "VERIFIED" || e.status === "SEALED").length || 3,
+            totalEvidenceCount: d.evidenceItems?.length || 5,
+            status: d.status || "ACTION_REQUIRED",
+            dueDate: "Nov 10, 2026 (5d left)",
+          }));
+          setDisputes(mapped);
+          return;
+        }
+      }
+      setDisputes(defaultDisputes);
+    } catch {
+      setDisputes(defaultDisputes);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    // Graceful fallback to default seed data when backend is not reached
-  }
+  };
 
-  // Seeded defaults in case DB is fresh
-  const defaultDisputes: DisputeRecord[] = [
-    {
-      id: "disp-chargeback-demo",
-      paypalDisputeId: "PP-D-849201",
-      disputeAmount: 75.0,
-      currency: "USD",
-      disputeReason: "UNAUTHORIZED_TRANSACTION",
-      verifiedEvidenceCount: 3,
-      totalEvidenceCount: 5,
-      status: "ACTION_REQUIRED",
-      dueDate: "Nov 10, 2026 (5d left)",
-    },
-    {
-      id: "disp-service-not-received",
-      paypalDisputeId: "PP-D-721094",
-      disputeAmount: 42.5,
-      currency: "USD",
-      disputeReason: "MERCHANDISE_NOT_RECEIVED",
-      verifiedEvidenceCount: 5,
-      totalEvidenceCount: 5,
-      status: "CO_SIGNED",
-      dueDate: "Nov 14, 2026 (9d left)",
-    },
-  ];
-
-  const disputes: DisputeRecord[] =
-    dbDisputes.length > 0
-      ? dbDisputes.map((d) => ({
-          id: d.id,
-          paypalDisputeId: d.paypalDisputeId,
-          disputeAmount: d.disputeAmount,
-          currency: d.currency,
-          disputeReason: d.disputeReason,
-          verifiedEvidenceCount:
-            d.evidenceItems?.filter((e: any) => e.status === "VERIFIED").length || 3,
-          totalEvidenceCount: d.evidenceItems?.length || 5,
-          status: d.status,
-          dueDate: "Nov 10, 2026 (5d left)",
-        }))
-      : defaultDisputes;
+  useEffect(() => {
+    fetchDisputes();
+  }, []);
 
   const totalDisputed = disputes.reduce((acc, d) => acc + d.disputeAmount, 0);
+
+  // Column definitions matching: Case ID, Amount, Claim Reason, Evidence, Status, Deadline, Action
+  const disputeColumnDefs: ColDef<DisputeRecord>[] = useMemo(
+    () => [
+      {
+        headerName: "Case ID",
+        field: "paypalDisputeId",
+        minWidth: 160,
+        flex: 1.2,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          return (
+            <Link
+              href={`/disputes/${dispute.id}`}
+              className="hover:underline flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-amber-600 dark:text-amber-400"
+            >
+              <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
+              <span>{dispute.paypalDisputeId}</span>
+            </Link>
+          );
+        },
+      },
+      {
+        headerName: "Amount",
+        field: "disputeAmount",
+        minWidth: 130,
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          return (
+            <div className="flex items-center h-full font-mono font-extrabold text-black dark:text-white tabular-nums text-sm">
+              ${dispute.disputeAmount.toFixed(2)} {dispute.currency}
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Claim Reason",
+        field: "disputeReason",
+        minWidth: 200,
+        flex: 1.5,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          return (
+            <div className="flex items-center h-full">
+              <span className="px-2.5 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.05] border border-black/5 dark:border-white/10 font-mono text-xs font-semibold text-black dark:text-white truncate">
+                {dispute.disputeReason}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Evidence",
+        field: "verifiedEvidenceCount",
+        minWidth: 190,
+        flex: 1.5,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          const ratio = Math.round(
+            (dispute.verifiedEvidenceCount / (dispute.totalEvidenceCount || 1)) * 100
+          );
+          return (
+            <div className="flex flex-col justify-center h-full w-full py-1 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="font-bold text-black dark:text-white">
+                  {dispute.verifiedEvidenceCount}/{dispute.totalEvidenceCount} Items
+                </span>
+                <span className="text-[10px] text-[#6C7378] dark:text-white/50 tabular-nums">
+                  {ratio}%
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1 w-full">
+                {Array.from({ length: dispute.totalEvidenceCount || 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 rounded-full ${
+                      i < dispute.verifiedEvidenceCount
+                        ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                        : "bg-black/10 dark:bg-white/10"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Status",
+        field: "status",
+        minWidth: 150,
+        flex: 1.1,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          const isActionRequired =
+            dispute.status === "ACTION_REQUIRED" || dispute.status === "OPEN";
+
+          return (
+            <div className="flex items-center h-full">
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isActionRequired ? "bg-amber-500 animate-pulse" : "bg-[#007A56] dark:bg-emerald-400"
+                  }`}
+                />
+                <span
+                  className={
+                    isActionRequired
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-[#007A56] dark:text-emerald-400"
+                  }
+                >
+                  {isActionRequired ? "ACTION REQUIRED" : "SUBMITTED"}
+                </span>
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Deadline",
+        field: "dueDate",
+        minWidth: 160,
+        flex: 1.1,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          return (
+            <div className="flex items-center gap-1.5 font-mono text-xs text-[#6C7378] dark:text-white/60">
+              <Clock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
+              <span>{dispute.dueDate}</span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Action",
+        minWidth: 160,
+        flex: 1,
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: any) => {
+          const dispute = params.data as DisputeRecord;
+          if (!dispute) return null;
+          return (
+            <div className="flex items-center justify-end h-full">
+              <Link
+                href={`/disputes/${dispute.id}`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all group"
+              >
+                <span>Autopsy Room</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <div className="space-y-8 w-full max-w-full">
@@ -104,7 +278,7 @@ export default async function DisputesListPage() {
         </p>
       </div>
 
-      {/* 2. CONTINUOUS HORIZONTAL TELEMETRY STRIP (DIVIDED BY VERTICAL HAIRLINES, NO 3 SEPARATE CARDS) */}
+      {/* 2. CONTINUOUS HORIZONTAL TELEMETRY STRIP */}
       <div className="rounded-[20px] bg-white dark:bg-[#111114] border border-black/10 dark:border-white/10 overflow-hidden shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-black/10 dark:divide-white/10">
           {/* Metric 1: Active Chargebacks */}
@@ -150,124 +324,17 @@ export default async function DisputesListPage() {
         </div>
       </div>
 
-      {/* 3. DENSE FULL-WIDTH DATA TABLE (NO PER-ROW CARD BACKGROUNDS, HAIRLINE BOTTOM BORDERS) */}
-      <div className="overflow-x-auto w-full">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-black/15 dark:border-white/15 text-[#6C7378] dark:text-white/50 uppercase font-mono text-[10px] tracking-wider">
-              <th className="py-4 px-4 font-bold">Case ID</th>
-              <th className="py-4 px-4 font-bold">Disputed Amount</th>
-              <th className="py-4 px-4 font-bold">Claim Reason</th>
-              <th className="py-4 px-4 font-bold w-[200px]">Evidence Assembled</th>
-              <th className="py-4 px-4 font-bold">Status</th>
-              <th className="py-4 px-4 font-bold">Deadline</th>
-              <th className="py-4 px-4 text-right font-bold">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/10 dark:divide-white/10">
-            {disputes.map((dispute) => {
-              const isActionRequired =
-                dispute.status === "ACTION_REQUIRED" || dispute.status === "OPEN";
-
-              return (
-                <tr
-                  key={dispute.id}
-                  className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group"
-                >
-                  {/* Case ID (mono text link) */}
-                  <td className="py-4 px-4 font-mono font-bold text-sm text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                    <Link
-                      href={`/disputes/${dispute.id}`}
-                      className="hover:underline flex items-center gap-1.5"
-                    >
-                      <AlertOctagon className="w-3.5 h-3.5" />
-                      <span>{dispute.paypalDisputeId}</span>
-                    </Link>
-                  </td>
-
-                  {/* Disputed Amount (tabular-nums) */}
-                  <td className="py-4 px-4 font-mono font-extrabold text-black dark:text-white tabular-nums text-sm whitespace-nowrap">
-                    ${dispute.disputeAmount.toFixed(2)} {dispute.currency}
-                  </td>
-
-                  {/* Claim Reason (e.g. UNAUTHORIZED_TRANSACTION) */}
-                  <td className="py-4 px-4 font-mono text-xs text-black dark:text-white whitespace-nowrap">
-                    <span className="px-2.5 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.05] border border-black/5 dark:border-white/10 font-semibold">
-                      {dispute.disputeReason}
-                    </span>
-                  </td>
-
-                  {/* Evidence Assembled: e.g. "5/5 Items" with a thin segmented horizontal bar */}
-                  <td className="py-4 px-4 w-[200px]">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="font-bold text-black dark:text-white">
-                          {dispute.verifiedEvidenceCount}/{dispute.totalEvidenceCount} Items
-                        </span>
-                        <span className="text-[10px] text-[#6C7378] dark:text-white/50">
-                          {Math.round((dispute.verifiedEvidenceCount / dispute.totalEvidenceCount) * 100)}%
-                        </span>
-                      </div>
-
-                      {/* Thin Segmented Horizontal Bar (5 segments) */}
-                      <div className="grid grid-cols-5 gap-1 w-full">
-                        {Array.from({ length: dispute.totalEvidenceCount }).map((_, i) => (
-                          <div
-                            key={i}
-                            className={`h-1.5 rounded-full ${
-                              i < dispute.verifiedEvidenceCount
-                                ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
-                                : "bg-black/10 dark:bg-white/10"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Status: minimal text + amber dot */}
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isActionRequired
-                            ? "bg-amber-500 animate-pulse"
-                            : "bg-[#007A56] dark:bg-emerald-400"
-                        }`}
-                      />
-                      <span
-                        className={
-                          isActionRequired
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-[#007A56] dark:text-emerald-400"
-                        }
-                      >
-                        {isActionRequired ? "ACTION REQUIRED" : "SUBMITTED"}
-                      </span>
-                    </span>
-                  </td>
-
-                  {/* Deadline: mono text */}
-                  <td className="py-4 px-4 font-mono text-[11px] text-[#6C7378] dark:text-white/60 whitespace-nowrap">
-                    {dispute.dueDate}
-                  </td>
-
-                  {/* Action: Ghost link "Enter Autopsy Room →" */}
-                  <td className="py-4 px-4 text-right whitespace-nowrap">
-                    <Link
-                      href={`/disputes/${dispute.id}`}
-                      className="font-semibold text-xs text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-                    >
-                      <span>Enter Autopsy Room</span>
-                      <span>→</span>
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* 3. AG GRID COMPONENT FOR DISPUTES LIST */}
+      <DataGrid<DisputeRecord>
+        rowData={disputes}
+        columnDefs={disputeColumnDefs}
+        rowHeight={64}
+        pagination={true}
+        paginationPageSize={10}
+        domLayout="autoHeight"
+        loading={loading}
+        emptyMessage="No open disputes found."
+      />
     </div>
   );
 }

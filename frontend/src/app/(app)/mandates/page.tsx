@@ -426,6 +426,7 @@ export default function MandatesPage() {
       <DataGrid<Mandate>
         rowData={filteredMandates}
         columnDefs={mandateColumnDefs}
+        rowHeight={64}
         pagination={true}
         paginationPageSize={10}
         domLayout="autoHeight"
