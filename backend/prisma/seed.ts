@@ -21,7 +21,7 @@ async function main() {
   await prisma.mandate.deleteMany({});
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const disputeDueDate = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
 
   // 1. Primary Spend Mandate: Client Appreciation Procurement

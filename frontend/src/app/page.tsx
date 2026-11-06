@@ -105,7 +105,7 @@ export default function LandingPage() {
 
               {/* Two Full-Pill CTAs: Vibrant Blue #0070BA Primary & Deep Navy #0A2540 Outline */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-1">
-                <Link href="/demo">
+                <Link href="/simulator">
                   <span className="inline-flex items-center justify-center px-8 py-3.5 rounded-full text-base font-black text-white bg-[#0070BA] hover:bg-[#005a96] dark:bg-[#60CDFF] dark:text-[#002991] dark:hover:bg-[#4bc3fa] transition-all active:scale-[0.98] shadow-md w-full sm:w-auto text-center">
                     Launch interactive demo
                   </span>

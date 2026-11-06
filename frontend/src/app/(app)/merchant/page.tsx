@@ -262,9 +262,8 @@ export default function MerchantConsolePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#09090B] text-[#1D1E20] dark:text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-[1400px] mx-auto space-y-12">
-        {/* Header / Eyebrow */}
+    <div className="space-y-10 animate-in fade-in duration-300">
+      {/* Header / Eyebrow */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-[#002991]/5 dark:bg-[#60CDFF]/10 text-[#002991] dark:text-[#60CDFF] border border-[#002991]/10 dark:border-[#60CDFF]/20">
@@ -457,7 +456,6 @@ export default function MerchantConsolePage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 

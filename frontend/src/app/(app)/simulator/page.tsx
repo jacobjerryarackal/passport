@@ -104,6 +104,7 @@ const PRESET_SCENARIOS = [
 export default function SimulatorPage() {
   const [triggerText, setTriggerText] = useState(PRESET_SCENARIOS[0].prompt);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("gift");
+  const [mandatesList, setMandatesList] = useState<MandateInfo[]>([]);
   const [activeMandate, setActiveMandate] = useState<MandateInfo>({
     id: "mandate-gift-card-demo",
     title: "Client Appreciation Gift",
@@ -133,21 +134,31 @@ export default function SimulatorPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.mandates && data.mandates.length > 0) {
-            const active = data.mandates.find((m: any) => m.status === "ACTIVE" && !m.revoked) || data.mandates[0];
-            const cats =
-              typeof active.allowedCategories === "string"
-                ? JSON.parse(active.allowedCategories)
-                : active.allowedCategories;
-            setActiveMandate({
-              id: active.id,
-              title: active.title,
-              purpose: active.purpose,
-              maxAmount: active.maxAmount,
-              currency: active.currency,
-              allowedCategories: cats,
-              expiresAt: active.expiresAt,
-              status: active.status,
-            });
+            const list: MandateInfo[] = data.mandates.map((m: any) => ({
+              id: m.id,
+              title: m.title,
+              purpose: m.purpose,
+              maxAmount: m.maxAmount,
+              currency: m.currency,
+              allowedCategories:
+                typeof m.allowedCategories === "string"
+                  ? JSON.parse(m.allowedCategories)
+                  : m.allowedCategories,
+              expiresAt: m.expiresAt,
+              status: m.status,
+            }));
+            setMandatesList(list);
+
+            // Default to $80 mandate (Client Appreciation / 80 cap) so the demo flows perfectly out of the box
+            const preferred =
+              list.find((m) => m.maxAmount === 80 && m.status === "ACTIVE") ||
+              list.find((m) => m.title.toLowerCase().includes("client") && m.status === "ACTIVE") ||
+              list.find((m) => m.status === "ACTIVE") ||
+              list[0];
+
+            if (preferred) {
+              setActiveMandate(preferred);
+            }
           }
         }
       } catch {
@@ -156,6 +167,18 @@ export default function SimulatorPage() {
     }
     loadMandates();
   }, []);
+
+  const handleMandateChange = (mandateId: string) => {
+    const selected = mandatesList.find((m) => m.id === mandateId);
+    if (selected) {
+      setActiveMandate(selected);
+      // Reset downstream progression so new mandate limits take effect cleanly
+      setProposal(null);
+      setPolicyDecision(null);
+      setCheckoutResult(null);
+      setAnalysisError(null);
+    }
+  };
 
   const handleSelectScenario = (scenario: (typeof PRESET_SCENARIOS)[0]) => {
     setSelectedScenarioId(scenario.id);
@@ -208,7 +231,12 @@ export default function SimulatorPage() {
       }
 
       if (data.mandate) {
-        setActiveMandate(data.mandate);
+        const found = mandatesList.find((m) => m.id === data.mandate.id);
+        if (found) {
+          setActiveMandate(found);
+        } else {
+          setActiveMandate(data.mandate);
+        }
       }
       setProposal(data.proposal);
     } catch (err) {
@@ -361,12 +389,33 @@ export default function SimulatorPage() {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-mono uppercase tracking-wider text-[#6C7378]">
+              <label htmlFor="active-mandate-select" className="block text-[11px] font-mono uppercase tracking-wider text-[#6C7378]">
                 Governing Policy Mandate
-              </div>
-              <div className="text-base font-bold text-[#0A2540] dark:text-white">
-                {activeMandate.title}
-              </div>
+              </label>
+              {mandatesList.length > 0 ? (
+                <div className="mt-1">
+                  <select
+                    id="active-mandate-select"
+                    value={activeMandate.id}
+                    onChange={(e) => handleMandateChange(e.target.value)}
+                    className="font-display font-bold text-sm sm:text-base text-[#0A2540] dark:text-white bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] border border-black/10 dark:border-white/15 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0070BA] dark:focus:ring-[#60CDFF] transition-all cursor-pointer"
+                  >
+                    {mandatesList.map((m) => (
+                      <option
+                        key={m.id}
+                        value={m.id}
+                        className="bg-white dark:bg-[#18181C] text-black dark:text-white py-1 font-sans text-sm font-medium"
+                      >
+                        {m.title} (${m.maxAmount.toFixed(2)} {m.currency})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="text-base font-bold text-[#0A2540] dark:text-white">
+                  {activeMandate.title}
+                </div>
+              )}
             </div>
           </div>
 
