@@ -14,6 +14,8 @@ async function main() {
   await prisma.evidenceItem.deleteMany({});
   await prisma.dispute.deleteMany({});
   await prisma.trustPassport.deleteMany({});
+  await prisma.merchantOrder.deleteMany({});
+  await prisma.merchantProduct.deleteMany({});
   await prisma.purchase.deleteMany({});
   await prisma.purchaseProposal.deleteMany({});
   await prisma.auditLog.deleteMany({});
@@ -324,7 +326,51 @@ async function main() {
     },
   });
 
-  console.log("Database seeded successfully with Mandates, Purchases, Passports, and Disputes.");
+  // 8. GiftCardCo Merchant Catalog Products
+  const giftCardCoProducts = [
+    {
+      sku: "gcc-digital-25",
+      name: "GiftCardCo Digital Pass · $25",
+      description: "Instant digital merchant procurement voucher for cloud services and client incentives.",
+      amount: 25.0,
+      currency: "USD",
+      category: "digital gift cards",
+      merchant: "GiftCardCo",
+    },
+    {
+      sku: "gcc-digital-50",
+      name: "GiftCardCo Digital Pass · $50",
+      description: "Standard business digital incentive reward voucher, non-repudiable delivery.",
+      amount: 50.0,
+      currency: "USD",
+      category: "digital gift cards",
+      merchant: "GiftCardCo",
+    },
+    {
+      sku: "gcc-digital-75",
+      name: "GiftCardCo Digital Pass · $75",
+      description: "Executive client appreciation gift credit. Compliant with tier-1 $80 corporate mandate.",
+      amount: 75.0,
+      currency: "USD",
+      category: "digital gift cards",
+      merchant: "GiftCardCo",
+    },
+    {
+      sku: "gcc-digital-120",
+      name: "GiftCardCo Digital Pass · $120",
+      description: "Tier-1 enterprise digital procurement pass. Exceeds standard client $80 mandate cap.",
+      amount: 120.0,
+      currency: "USD",
+      category: "digital gift cards",
+      merchant: "GiftCardCo",
+    },
+  ];
+
+  for (const prod of giftCardCoProducts) {
+    await prisma.merchantProduct.create({ data: prod });
+  }
+
+  console.log("Database seeded successfully with Mandates, Purchases, Passports, Disputes, and GiftCardCo Products.");
 }
 
 main()
