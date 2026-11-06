@@ -61,6 +61,8 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
   // custom_id attaches the Trust Passport ID and SHA-256 mandate hash for two-sided merchant verification
   const customId = `${passportId}:${mandateHash}`;
 
+  const formattedAmount = params.amount.toFixed(2);
+
   if (!isConfigured) {
     const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
     const orderId = `PAYPAL-ORD-${randomSuffix}-SB`;
@@ -74,8 +76,8 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
           custom_id: customId,
           description: `AI Agent Authorized: ${params.itemName}`,
           amount: {
-            currency_code: params.currency || "USD",
-            value: params.amount.toFixed(2),
+            currency_code: "USD",
+            value: formattedAmount,
           },
           payee: {
             email_address: "merchant-sandbox@partner-network.com",
@@ -107,12 +109,12 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
         custom_id: customId,
         description: `Agent Spend: ${params.itemName} (${params.category})`,
         amount: {
-          currency_code: params.currency || "USD",
-          value: params.amount.toFixed(2),
+          currency_code: "USD",
+          value: formattedAmount,
           breakdown: {
             item_total: {
-              currency_code: params.currency || "USD",
-              value: params.amount.toFixed(2),
+              currency_code: "USD",
+              value: formattedAmount,
             },
           },
         },
@@ -121,8 +123,8 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
             name: params.itemName,
             quantity: "1",
             unit_amount: {
-              currency_code: params.currency || "USD",
-              value: params.amount.toFixed(2),
+              currency_code: "USD",
+              value: formattedAmount,
             },
             category: "DIGITAL_GOODS",
           },

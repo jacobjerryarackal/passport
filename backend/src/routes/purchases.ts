@@ -217,7 +217,7 @@ router.post("/execute", async (req: Request, res: Response) => {
     const paypalOrder = await createPayPalOrder({
       mandateId: proposal.mandateId,
       amount: proposal.amount,
-      currency: proposal.currency,
+      currency: "USD",
       itemName: proposal.itemName,
       category: proposal.itemCategory,
       recipient: proposal.recipient,
@@ -234,7 +234,7 @@ router.post("/execute", async (req: Request, res: Response) => {
       details: {
         orderId: paypalOrder.id,
         amount: proposal.amount,
-        currency: proposal.currency,
+        currency: "USD",
         isSimulated: paypalOrder.isSimulated,
       },
     });
@@ -260,7 +260,7 @@ router.post("/execute", async (req: Request, res: Response) => {
           paypalOrderId: paypalOrder.id,
           status: "PENDING",
           amount: proposal.amount,
-          currency: proposal.currency,
+          currency: "USD",
           merchantName: effectiveMerchant,
         },
       });
@@ -272,7 +272,7 @@ router.post("/execute", async (req: Request, res: Response) => {
           paypalOrderId: paypalOrder.id,
           status: "PENDING",
           amount: proposal.amount,
-          currency: proposal.currency,
+          currency: "USD",
           merchantName: effectiveMerchant,
           payerEmail: "agent-treasury@passport-ai.internal",
           paymentMethod: "PayPal Sandbox Wallet",
