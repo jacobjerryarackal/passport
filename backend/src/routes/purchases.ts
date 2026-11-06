@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../db/prisma";
 import { runPurchaseAgent } from "../agents/purchase-agent";
 import { validateProposalAgainstMandate } from "../mandates/validator";
+import { isPayPalConfigured } from "../paypal/client";
 import { createPayPalOrder, capturePayPalOrder } from "../paypal/orders";
 import { generatePassportHash, signPassport, calculateDisputeReadinessScore } from "../verification/hasher";
 import { logAuditEvent } from "../audit/logger";
@@ -280,9 +281,20 @@ router.post("/execute", async (req: Request, res: Response) => {
       });
     }
 
+    const isConfigured = isPayPalConfigured();
+    // Extract the real approve URL from the PayPal API response
+    const realApproveUrl = paypalOrder.links?.find((link) => link.rel === "approve")?.href;
+
+    if (isConfigured && !realApproveUrl) {
+      return res.status(500).json({
+        error: "PayPal Sandbox API did not return an approval URL for the created order.",
+        orderId: paypalOrder.id,
+      });
+    }
+
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const approveUrl =
-      paypalOrder.links?.find((l) => l.rel === "approve")?.href ||
+      realApproveUrl ||
       `${frontendUrl}/purchases/capture-success?token=${paypalOrder.id}&PayerID=SIMULATED_PAYER`;
 
     return res.json({

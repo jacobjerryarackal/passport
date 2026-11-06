@@ -143,33 +143,24 @@ export async function createPayPalOrder(params: CreateOrderParams): Promise<PayP
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok || response.isSimulated) {
-    const randomSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
-    const orderId = `PAYPAL-ORD-${randomSuffix}-SB`;
-    return {
-      id: orderId,
-      status: "APPROVED",
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          reference_id: "default",
-          custom_id: params.mandateId,
-          description: params.itemName,
-          amount: {
-            currency_code: params.currency || "USD",
-            value: params.amount.toFixed(2),
-          },
-        },
-      ],
-      links: [
-        {
-          href: `${frontendUrl}/purchases/capture-success?token=${orderId}&PayerID=SIMULATED_PAYER`,
-          rel: "approve",
-          method: "GET",
-        },
-      ],
-      isSimulated: true,
-    };
+  if (!response.ok) {
+    const errorBody =
+      (response.data as any)?.message ||
+      (response.data as any)?.error_description ||
+      (response.data as any)?.details?.[0]?.description ||
+      (response.data as any)?.details?.[0]?.issue ||
+      JSON.stringify(response.data);
+    throw new Error(`PayPal Sandbox API order creation failed (${response.status}): ${errorBody}`);
+  }
+
+  // Extract the real approve URL from the PayPal API response
+  const approveLink = response.data?.links?.find((link) => link.rel === "approve");
+  if (!approveLink || !approveLink.href) {
+    throw new Error(
+      `PayPal Sandbox API returned order ${response.data?.id} without an 'approve' link: ${JSON.stringify(
+        response.data?.links
+      )}`
+    );
   }
 
   return { ...response.data, isSimulated: false };

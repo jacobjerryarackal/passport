@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import apiRouter from "./routes";
 
-dotenv.config();
+dotenv.config({ override: true });
+dotenv.config({ path: path.resolve(process.cwd(), "backend/.env"), override: true });
 
 const app = express();
 const PORT = process.env.PORT || 4000;

@@ -1,3 +1,11 @@
+import dotenv from "dotenv";
+import path from "path";
+
+// Ensure .env is loaded regardless of process starting directory or existing empty env vars
+dotenv.config({ override: true });
+dotenv.config({ path: path.resolve(process.cwd(), "backend/.env"), override: true });
+dotenv.config({ path: path.resolve(__dirname, "../../.env"), override: true });
+
 interface TokenCache {
   accessToken: string;
   expiresAt: number;
@@ -69,8 +77,8 @@ export async function getPayPalAccessToken(): Promise<string> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn("PayPal OAuth token request failed, falling back to simulated mode:", errorText);
-      return "SIMULATED_PAYPAL_SANDBOX_ACCESS_TOKEN";
+      console.error("PayPal OAuth token request failed:", errorText);
+      throw new Error(`PayPal OAuth token request failed (${response.status}): ${errorText}`);
     }
 
     const data = (await response.json()) as { access_token: string; expires_in: number };
@@ -81,8 +89,8 @@ export async function getPayPalAccessToken(): Promise<string> {
 
     return cachedToken.accessToken;
   } catch (err) {
-    console.warn("PayPal network error in OAuth token, fallback to simulation:", err);
-    return "SIMULATED_PAYPAL_SANDBOX_ACCESS_TOKEN";
+    console.error("PayPal network error in OAuth token:", err);
+    throw err;
   }
 }
 
@@ -99,7 +107,18 @@ export async function paypalFetch<T = unknown>(
     };
   }
 
-  const token = await getPayPalAccessToken();
+  let token: string;
+  try {
+    token = await getPayPalAccessToken();
+  } catch (err) {
+    return {
+      ok: false,
+      status: 500,
+      data: { error: "PayPal OAuth Failed", details: String(err) } as T,
+      isSimulated: false,
+    };
+  }
+
   if (token === "SIMULATED_PAYPAL_SANDBOX_ACCESS_TOKEN") {
     return {
       ok: true,
