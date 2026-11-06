@@ -244,8 +244,8 @@ router.post("/execute", async (req: Request, res: Response) => {
       (proposal.itemName.toLowerCase().includes("figma")
         ? "Figma Inc."
         : proposal.itemName.toLowerCase().includes("chair")
-        ? "Herman Miller Authorized Dealer"
-        : "Starbucks Digital Rewards Network");
+          ? "Herman Miller Authorized Dealer"
+          : "Starbucks Digital Rewards Network");
 
     // Save pending Purchase record in DB
     let purchase = await prisma.purchase.findUnique({
@@ -362,17 +362,54 @@ router.post("/capture", async (req: Request, res: Response) => {
     }
 
     // If already captured and passport exists, return idempotent response
-    if (purchase.status === "COMPLETED" && purchase.passport) {
+    const existingPassport =
+      purchase.passport ||
+      (await prisma.trustPassport.findUnique({
+        where: { purchaseId: purchase.id },
+      }));
+
+    if (purchase.status === "COMPLETED" && existingPassport) {
       return res.json({
         success: true,
         purchase,
-        passport: purchase.passport,
+        passport: existingPassport,
         alreadyCaptured: true,
       });
     }
 
-    // 2. Execute PayPal Capture API
-    const captured = await capturePayPalOrder(orderId);
+    // 2. Execute PayPal Capture API (skip if already captured)
+    let captured: any;
+    if (purchase.paypalCaptureId && purchase.status === "COMPLETED") {
+      captured = {
+        orderId: purchase.paypalOrderId,
+        captureId: purchase.paypalCaptureId,
+        status: "COMPLETED",
+        amount: purchase.amount,
+        currency: purchase.currency,
+        sellerProtectionStatus: "ELIGIBLE",
+        raw: {},
+        isSimulated: purchase.paymentMethod?.includes("Simulated") || false,
+      };
+    } else {
+      try {
+        captured = await capturePayPalOrder(orderId);
+      } catch (capErr: any) {
+        if (purchase.paypalCaptureId || capErr?.message?.includes("ALREADY_CAPTURED")) {
+          captured = {
+            orderId: purchase.paypalOrderId,
+            captureId: purchase.paypalCaptureId || `CAPTURE-${crypto.randomBytes(4).toString("hex").toUpperCase()}-SB`,
+            status: "COMPLETED",
+            amount: purchase.amount,
+            currency: purchase.currency,
+            sellerProtectionStatus: "ELIGIBLE",
+            raw: {},
+            isSimulated: true,
+          };
+        } else {
+          throw capErr;
+        }
+      }
+    }
 
     // 3. Update Purchase record to COMPLETED
     const updatedPurchase = await prisma.purchase.update({
@@ -384,7 +421,7 @@ router.post("/capture", async (req: Request, res: Response) => {
           ? "PayPal Sandbox Wallet (Simulated Instant)"
           : "PayPal Sandbox Wallet",
         rawPaypalResponse: JSON.stringify(captured.raw),
-        completedAt: new Date(),
+        completedAt: purchase.completedAt || new Date(),
       },
       include: {
         mandate: true,
@@ -431,8 +468,10 @@ router.post("/capture", async (req: Request, res: Response) => {
 
     const disputeReadinessScore = calculateDisputeReadinessScore(initialEvidencePack);
 
-    const passport = await prisma.trustPassport.create({
-      data: {
+    const passport = await prisma.trustPassport.upsert({
+      where: { purchaseId: updatedPurchase.id },
+      update: {},
+      create: {
         passportNumber,
         purchaseId: updatedPurchase.id,
         mandateId: updatedPurchase.mandateId,
