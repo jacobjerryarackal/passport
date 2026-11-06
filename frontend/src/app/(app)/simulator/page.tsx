@@ -134,7 +134,9 @@ export default function SimulatorPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.mandates && data.mandates.length > 0) {
-            const list: MandateInfo[] = data.mandates.map((m: any) => ({
+            const activeOnly = data.mandates.filter((m: any) => m.status === "ACTIVE" && !m.revoked);
+            const sourceList = activeOnly.length > 0 ? activeOnly : data.mandates;
+            const list: MandateInfo[] = sourceList.map((m: any) => ({
               id: m.id,
               title: m.title,
               purpose: m.purpose,

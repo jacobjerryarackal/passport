@@ -26,9 +26,23 @@ async function main() {
   const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const disputeDueDate = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
 
-  // 1. Primary Spend Mandate: Client Appreciation Procurement
-  const mandate = await prisma.mandate.create({
-    data: {
+  // 1. Primary Spend Mandate: Client Appreciation Procurement ($80)
+  const mandate = await prisma.mandate.upsert({
+    where: { id: "mnd-client-gift-80" },
+    update: {
+      title: "Client Appreciation Procurement",
+      purpose: "Authorized procurement of digital reward gift cards for quarterly VIP clients",
+      maxAmount: 80.0,
+      currency: "USD",
+      allowedCategories: JSON.stringify(["digital gift cards"]),
+      expiryHours: 24,
+      expiresAt: expiresAt,
+      refundPolicy: "Full refund within 24 hours if unused",
+      status: "ACTIVE",
+      revoked: false,
+      rawPrompt: "Authorize my AI agent to buy a digital gift card for a client, up to $80, valid for 24 hours.",
+    },
+    create: {
       id: "mnd-client-gift-80",
       title: "Client Appreciation Procurement",
       purpose: "Authorized procurement of digital reward gift cards for quarterly VIP clients",
@@ -39,28 +53,27 @@ async function main() {
       expiresAt: expiresAt,
       refundPolicy: "Full refund within 24 hours if unused",
       status: "ACTIVE",
+      revoked: false,
       rawPrompt: "Authorize my AI agent to buy a digital gift card for a client, up to $80, valid for 24 hours.",
     },
   });
 
-  // Secondary Mandates
-  await prisma.mandate.create({
-    data: {
-      id: "mnd-gpu-cluster-150",
-      title: "AI Inference Cluster Provisioning",
-      purpose: "Elastic GPU compute node allocation for batch document dispute parsing",
-      maxAmount: 150.0,
+  // 2. Secondary Mandate: Developer API Subscriptions ($50)
+  await prisma.mandate.upsert({
+    where: { id: "mnd-saas-tools-50" },
+    update: {
+      title: "Developer API Subscriptions",
+      purpose: "Monthly recurring sandbox test keys and vector index querying",
+      maxAmount: 50.0,
       currency: "USD",
-      allowedCategories: JSON.stringify(["cloud compute", "gpu instances"]),
-      expiryHours: 48,
-      expiresAt: new Date(now.getTime() + 48 * 3600000),
-      refundPolicy: "Pay-as-you-go per minute allocation",
+      allowedCategories: JSON.stringify(["api subscriptions", "software"]),
+      expiryHours: 72,
+      expiresAt: expiresAt,
+      refundPolicy: "Merchant terms apply",
       status: "ACTIVE",
+      revoked: false,
     },
-  });
-
-  await prisma.mandate.create({
-    data: {
+    create: {
       id: "mnd-saas-tools-50",
       title: "Developer API Subscriptions",
       purpose: "Monthly recurring sandbox test keys and vector index querying",
@@ -68,9 +81,40 @@ async function main() {
       currency: "USD",
       allowedCategories: JSON.stringify(["api subscriptions", "software"]),
       expiryHours: 72,
-      expiresAt: new Date(now.getTime() + 72 * 3600000),
+      expiresAt: expiresAt,
       refundPolicy: "Merchant terms apply",
       status: "ACTIVE",
+      revoked: false,
+    },
+  });
+
+  // 3. Secondary Mandate: AI Inference Cluster Provisioning ($150)
+  await prisma.mandate.upsert({
+    where: { id: "mnd-gpu-cluster-150" },
+    update: {
+      title: "AI Inference Cluster Provisioning",
+      purpose: "Elastic GPU compute node allocation for batch document dispute parsing",
+      maxAmount: 150.0,
+      currency: "USD",
+      allowedCategories: JSON.stringify(["cloud compute", "gpu instances"]),
+      expiryHours: 48,
+      expiresAt: expiresAt,
+      refundPolicy: "Pay-as-you-go per minute allocation",
+      status: "ACTIVE",
+      revoked: false,
+    },
+    create: {
+      id: "mnd-gpu-cluster-150",
+      title: "AI Inference Cluster Provisioning",
+      purpose: "Elastic GPU compute node allocation for batch document dispute parsing",
+      maxAmount: 150.0,
+      currency: "USD",
+      allowedCategories: JSON.stringify(["cloud compute", "gpu instances"]),
+      expiryHours: 48,
+      expiresAt: expiresAt,
+      refundPolicy: "Pay-as-you-go per minute allocation",
+      status: "ACTIVE",
+      revoked: false,
     },
   });
 
