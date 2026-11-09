@@ -1,4 +1,4 @@
-import { isPayPalConfigured, paypalFetch, PAYPAL_MCP_URL } from "./client";
+import { isPayPalConfigured, paypalFetch, PAYPAL_MCP_URL, PayPalTimeoutError } from "./client";
 import * as crypto from "crypto";
 
 export interface CreateOrderParams {
@@ -208,6 +208,9 @@ export async function capturePayPalOrder(orderId: string): Promise<{
   });
 
   if (!response.ok || response.isSimulated) {
+    if ((response.data as any)?.error === "PAYPAL_TIMEOUT" || (response.data as any)?.isTimeout) {
+      throw new PayPalTimeoutError();
+    }
     const captureSuffix = crypto.randomBytes(4).toString("hex").toUpperCase();
     return {
       orderId,

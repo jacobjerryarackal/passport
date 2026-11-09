@@ -70,7 +70,7 @@ export default function CaptureSuccessPage() {
 
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || "Failed to capture PayPal order");
+        throw new Error(json.message || json.error || "Failed to capture PayPal order");
       }
 
       setData(json);

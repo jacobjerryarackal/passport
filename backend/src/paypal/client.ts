@@ -18,6 +18,15 @@ export const PAYPAL_BASE_URL =
   PAYPAL_ENV === "production" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 export const PAYPAL_MCP_URL = process.env.PAYPAL_MCP_URL || "https://mcp.sandbox.paypal.com";
 
+export class PayPalTimeoutError extends Error {
+  code: string;
+  constructor(message = "PayPal did not respond in time. Please check the order status before retrying.") {
+    super(message);
+    this.name = "PayPalTimeoutError";
+    this.code = "PAYPAL_TIMEOUT";
+  }
+}
+
 export function isPayPalConfigured(): boolean {
   const clientId = process.env.PAYPAL_CLIENT_ID;
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -73,6 +82,7 @@ export async function getPayPalAccessToken(): Promise<string> {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: "grant_type=client_credentials",
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
@@ -88,7 +98,11 @@ export async function getPayPalAccessToken(): Promise<string> {
     };
 
     return cachedToken.accessToken;
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError" || err instanceof PayPalTimeoutError) {
+      console.error("PayPal OAuth token request timed out after 15,000ms");
+      throw new PayPalTimeoutError("PayPal OAuth token request timed out after 15 seconds.");
+    }
     console.error("PayPal network error in OAuth token:", err);
     throw err;
   }
@@ -110,7 +124,10 @@ export async function paypalFetch<T = unknown>(
   let token: string;
   try {
     token = await getPayPalAccessToken();
-  } catch (err) {
+  } catch (err: any) {
+    if (err instanceof PayPalTimeoutError || err?.code === "PAYPAL_TIMEOUT" || err?.name === "TimeoutError") {
+      throw new PayPalTimeoutError();
+    }
     return {
       ok: false,
       status: 500,
@@ -136,7 +153,11 @@ export async function paypalFetch<T = unknown>(
   };
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal || AbortSignal.timeout(15000),
+    });
     const text = await response.text();
     let data: unknown;
     try {
@@ -151,7 +172,17 @@ export async function paypalFetch<T = unknown>(
       data: data as T,
       isSimulated: false,
     };
-  } catch (err) {
+  } catch (err: any) {
+    if (
+      err?.name === "TimeoutError" ||
+      err?.name === "AbortError" ||
+      err instanceof PayPalTimeoutError ||
+      (err as Error)?.message?.toLowerCase().includes("timeout") ||
+      (err as Error)?.message?.toLowerCase().includes("aborted")
+    ) {
+      console.warn(`PayPal fetch timed out after 15,000ms on ${endpoint}`);
+      throw new PayPalTimeoutError();
+    }
     console.warn(`PayPal fetch error on ${endpoint}:`, err);
     return {
       ok: false,

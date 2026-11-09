@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../db/prisma";
 import { runPurchaseAgent } from "../agents/purchase-agent";
 import { validateProposalAgainstMandate } from "../mandates/validator";
-import { isPayPalConfigured } from "../paypal/client";
+import { isPayPalConfigured, PayPalTimeoutError } from "../paypal/client";
 import { createPayPalOrder, capturePayPalOrder } from "../paypal/orders";
 import { generatePassportHash, signPassport, calculateDisputeReadinessScore } from "../verification/hasher";
 import { logAuditEvent } from "../audit/logger";
@@ -406,6 +406,21 @@ router.post("/capture", async (req: Request, res: Response) => {
       try {
         captured = await capturePayPalOrder(orderId);
       } catch (capErr: any) {
+        if (
+          capErr instanceof PayPalTimeoutError ||
+          capErr?.code === "PAYPAL_TIMEOUT" ||
+          capErr?.name === "TimeoutError" ||
+          capErr?.name === "PayPalTimeoutError" ||
+          capErr?.message?.includes("PAYPAL_TIMEOUT") ||
+          capErr?.message?.toLowerCase().includes("timed out") ||
+          capErr?.message?.toLowerCase().includes("timeout")
+        ) {
+          console.error("PayPal capture timed out for order:", orderId, capErr);
+          return res.status(504).json({
+            error: "PAYPAL_TIMEOUT",
+            message: "PayPal did not respond in time. Please check the order status before retrying.",
+          });
+        }
         if (purchase.paypalCaptureId || capErr?.message?.includes("ALREADY_CAPTURED")) {
           captured = {
             orderId: purchase.paypalOrderId,
@@ -547,8 +562,22 @@ router.post("/capture", async (req: Request, res: Response) => {
       passport,
       captured,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("POST /api/purchases/capture error:", err);
+    if (
+      err instanceof PayPalTimeoutError ||
+      err?.code === "PAYPAL_TIMEOUT" ||
+      err?.name === "TimeoutError" ||
+      err?.name === "PayPalTimeoutError" ||
+      err?.message?.includes("PAYPAL_TIMEOUT") ||
+      err?.message?.toLowerCase().includes("timed out") ||
+      err?.message?.toLowerCase().includes("timeout")
+    ) {
+      return res.status(504).json({
+        error: "PAYPAL_TIMEOUT",
+        message: "PayPal did not respond in time. Please check the order status before retrying.",
+      });
+    }
     return res.status(500).json({ error: (err as Error).message });
   }
 });
