@@ -17,6 +17,8 @@ import {
   Lock,
   FileCheck,
   ShoppingBag,
+  Check,
+  X,
 } from "lucide-react";
 import { formatCurrency, formatDate, truncateHash } from "@/lib/utils";
 
@@ -98,8 +100,8 @@ export default function MerchantConsolePage() {
       {
         headerName: "Order Number",
         field: "orderNumber",
-        minWidth: 160,
-        flex: 1.2,
+        minWidth: 180,
+        flex: 1,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order) return null;
@@ -118,7 +120,7 @@ export default function MerchantConsolePage() {
       {
         headerName: "Product",
         field: "product.name",
-        minWidth: 200,
+        minWidth: 220,
         flex: 1.5,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
@@ -139,7 +141,7 @@ export default function MerchantConsolePage() {
         headerName: "Amount",
         field: "amount",
         minWidth: 120,
-        flex: 0.9,
+        flex: 0.8,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order) return null;
@@ -153,18 +155,27 @@ export default function MerchantConsolePage() {
       {
         headerName: "Verification Status",
         field: "verificationStatus",
-        minWidth: 160,
-        flex: 1.1,
+        minWidth: 200,
+        flex: 1.2,
+        wrapHeaderText: true,
+        autoHeaderHeight: true,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order) return null;
           const isVerified = order.verificationStatus === "VERIFIED";
           return (
             <div className="flex items-center h-full">
-              <StatusPill
-                status={isVerified ? "verified" : "blocked"}
-                label={isVerified ? "Verified & Settled" : "Intercepted / Blocked"}
-              />
+              {isVerified ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  <Check className="w-3 h-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>VERIFIED</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20">
+                  <X className="w-3 h-3 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <span>BLOCKED</span>
+                </span>
+              )}
             </div>
           );
         },
@@ -172,8 +183,8 @@ export default function MerchantConsolePage() {
       {
         headerName: "Rejection Reason",
         field: "rejectionReason",
-        minWidth: 170,
-        flex: 1.3,
+        minWidth: 160,
+        flex: 1,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order) return null;
@@ -186,7 +197,10 @@ export default function MerchantConsolePage() {
           }
           return (
             <div className="flex items-center h-full">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 truncate"
+                title={order.rejectionReason}
+              >
                 {order.rejectionReason}
               </span>
             </div>
@@ -197,7 +211,9 @@ export default function MerchantConsolePage() {
         headerName: "PayPal Capture ID",
         field: "paypalCaptureId",
         minWidth: 180,
-        flex: 1.3,
+        flex: 1.2,
+        wrapHeaderText: true,
+        autoHeaderHeight: true,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order || !order.paypalCaptureId) {
@@ -224,8 +240,10 @@ export default function MerchantConsolePage() {
       {
         headerName: "Passport Attestation",
         field: "passportNumber",
-        minWidth: 170,
+        minWidth: 220,
         flex: 1.2,
+        wrapHeaderText: true,
+        autoHeaderHeight: true,
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order) return null;
@@ -244,11 +262,12 @@ export default function MerchantConsolePage() {
         headerName: "Defense Action",
         minWidth: 150,
         flex: 1,
+        cellStyle: { textAlign: "right" },
         cellRenderer: (params: any) => {
           const order = params.data as MerchantOrder;
           if (!order || order.status !== "CAPTURED") return null;
           return (
-            <div className="flex items-center h-full">
+            <div className="flex items-center justify-end h-full w-full">
               <Link
                 href="/evidence"
                 className="px-3 py-1 rounded-full text-[11px] font-bold text-[#002991] dark:text-white border border-[#002991]/20 dark:border-white/20 hover:bg-[#002991]/5 dark:hover:bg-white/5 transition-colors"
