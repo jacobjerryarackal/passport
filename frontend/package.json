@@ -18,6 +18,7 @@
     "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^5.22.0",
     "ag-grid-community": "^32.3.3",
+    "ag-grid-enterprise": "32.3.3",
     "ag-grid-react": "^32.3.3",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",

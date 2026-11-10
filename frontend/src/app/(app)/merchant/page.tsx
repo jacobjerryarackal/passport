@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { ColDef } from "ag-grid-community";
-import { DataGrid } from "@/components/ui/data-grid";
+import { DataGrid, useGridApiRef } from "@/components/ui/data-grid";
 import { StatusPill } from "@/components/ui/status-pill";
 import {
   Store,
@@ -65,6 +65,7 @@ export default function MerchantConsolePage() {
     grossSettledVolume: 0,
   });
   const [loading, setLoading] = useState(true);
+  const gridApi = useGridApiRef();
 
   const fetchOrders = async () => {
     try {
@@ -367,9 +368,16 @@ export default function MerchantConsolePage() {
             </span>
           </div>
 
-          <div className="rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden bg-white dark:bg-[#09090B]">
-            <DataGrid rowData={orders} columnDefs={columnDefs} rowHeight={68} />
-          </div>
+          <DataGrid
+            apiRef={gridApi}
+            rowData={orders}
+            columnDefs={columnDefs}
+            rowHeight={68}
+            showToolbar={true}
+            showDownloadCsv={true}
+            title="Settled Orders Ledger"
+            csvFileName="merchant_orders.csv"
+          />
         </div>
 
         {/* Section: Rejection Sentinel Log */}

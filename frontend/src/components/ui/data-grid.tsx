@@ -1,12 +1,25 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
-import { ColDef, GridOptions, RowClickedEvent } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions, GridReadyEvent, RowClickedEvent } from "ag-grid-community";
 import { useTheme } from "next-themes";
+import { Download } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
+import "ag-grid-enterprise";
+
+export interface GridApiRef {
+  exportDataAsCsv: (params?: any) => void;
+  [key: string]: any;
+}
+
+export function useGridApiRef<T = any>() {
+  return useRef<GridApiRef>({
+    exportDataAsCsv: () => {},
+  });
+}
 
 export interface DataGridProps<T = any> {
   rowData: T[] | null | undefined;
@@ -23,6 +36,20 @@ export interface DataGridProps<T = any> {
   gridOptions?: GridOptions<T>;
   loading?: boolean;
   emptyMessage?: string;
+  // Master / Detail View
+  masterDetail?: boolean;
+  detailCellRenderer?: any;
+  detailRowHeight?: number;
+  detailCellRendererParams?: any;
+  // Row Grouping Drop Panel
+  rowGroupPanelShow?: "always" | "onlyWhenGrouping" | "never";
+  // Toolbar & CSV Export
+  showToolbar?: boolean;
+  showDownloadCsv?: boolean;
+  csvFileName?: string;
+  title?: string;
+  onGridReady?: (params: GridReadyEvent<T>) => void;
+  apiRef?: React.MutableRefObject<any>;
 }
 
 export function DataGrid<T = any>({
@@ -40,9 +67,23 @@ export function DataGrid<T = any>({
   gridOptions,
   loading = false,
   emptyMessage = "No matching records found.",
+  masterDetail = false,
+  detailCellRenderer,
+  detailRowHeight = 280,
+  detailCellRendererParams,
+  rowGroupPanelShow,
+  showToolbar = false,
+  showDownloadCsv = true,
+  csvFileName,
+  title,
+  onGridReady,
+  apiRef: externalGridApi,
 }: DataGridProps<T>) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const internalGridRef = useRef<AgGridReact<T>>(null);
+  const fallbackGridApi = useGridApiRef<T>();
+  const gridApi = externalGridApi || fallbackGridApi;
 
   useEffect(() => {
     setMounted(true);
@@ -68,14 +109,62 @@ export function DataGrid<T = any>({
     return `<div class="p-8 text-center text-xs font-mono text-[#0070BA] dark:text-[#60CDFF] animate-pulse">Loading cryptographic records...</div>`;
   }, []);
 
+  const handleGridReady = (params: GridReadyEvent<T>) => {
+    gridApi.current = params.api;
+    if (onGridReady) {
+      onGridReady(params);
+    }
+  };
+
+  const handleDownloadCsv = () => {
+    const fileName =
+      csvFileName ||
+      `${title ? title.toLowerCase().replace(/\s+/g, "_") : "export"}_${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+
+    if (gridApi.current && typeof gridApi.current.exportDataAsCsv === "function") {
+      gridApi.current.exportDataAsCsv({ fileName });
+    } else if (internalGridRef.current?.api) {
+      internalGridRef.current.api.exportDataAsCsv({ fileName });
+    }
+  };
+
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-[#111114] shadow-xs">
+      {showToolbar && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+          <div className="flex items-center gap-2">
+            {title && (
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#002991] dark:text-[#60CDFF]">
+                {title}
+              </span>
+            )}
+            <span className="text-[11px] font-mono text-[#6C7378] dark:text-white/50">
+              {rowData ? `${rowData.length} records` : "0 records"}
+            </span>
+          </div>
+
+          {showDownloadCsv && (
+            <button
+              type="button"
+              onClick={handleDownloadCsv}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-[#002991] dark:text-[#60CDFF] bg-[#002991]/5 dark:bg-[#60CDFF]/10 hover:bg-[#002991]/10 dark:hover:bg-[#60CDFF]/20 border border-[#002991]/20 dark:border-[#60CDFF]/30 transition-all shadow-xs active:scale-[0.98]"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download CSV</span>
+            </button>
+          )}
+        </div>
+      )}
+
       <div
         className={`passport-ag-grid w-full ${
           isDark ? "ag-theme-quartz-dark" : "ag-theme-quartz"
         } ${className}`}
       >
         <AgGridReact<T>
+          ref={internalGridRef}
           rowData={rowData ?? []}
           columnDefs={columnDefs}
           defaultColDef={mergedDefaultColDef}
@@ -89,9 +178,15 @@ export function DataGrid<T = any>({
           suppressCellFocus={true}
           animateRows={true}
           onRowClicked={onRowClicked}
+          onGridReady={handleGridReady}
           overlayNoRowsTemplate={overlayNoRowsTemplate}
           overlayLoadingTemplate={overlayLoadingTemplate}
           loading={loading}
+          masterDetail={masterDetail}
+          detailCellRenderer={detailCellRenderer}
+          detailRowHeight={detailRowHeight}
+          detailCellRendererParams={detailCellRendererParams}
+          rowGroupPanelShow={rowGroupPanelShow}
           {...gridOptions}
         />
       </div>
@@ -134,6 +229,82 @@ export function DataGrid<T = any>({
           display: flex;
           align-items: center;
           line-height: normal;
+        }
+
+        /* Group Cell Renderer & Expand Chevron */
+        .passport-ag-grid .ag-cell-wrapper {
+          display: flex !important;
+          align-items: center !important;
+          width: 100% !important;
+          gap: 8px !important;
+        }
+
+        .passport-ag-grid .ag-group-value {
+          display: inline-block !important;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+          font-weight: 700 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.02em !important;
+          font-size: 12px !important;
+          color: inherit !important;
+        }
+
+        .passport-ag-grid .ag-group-expanded,
+        .passport-ag-grid .ag-group-contracted {
+          cursor: pointer !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: #002991 !important;
+        }
+        .passport-ag-grid.ag-theme-quartz-dark .ag-group-expanded,
+        .passport-ag-grid.ag-theme-quartz-dark .ag-group-contracted {
+          color: #60CDFF !important;
+        }
+
+        /* Hide AG Grid watermark */
+        .passport-ag-grid .ag-watermark,
+        .ag-watermark {
+          display: none !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          visibility: hidden !important;
+        }
+
+        /* Master Detail Row Styling */
+        .passport-ag-grid .ag-details-row,
+        .passport-ag-grid .ag-details-row-fixed-height {
+          display: block !important;
+          height: auto !important;
+          padding: 0 !important;
+          border-bottom: 1px solid var(--ag-border-color) !important;
+        }
+        .passport-ag-grid .ag-details-row .ag-cell,
+        .passport-ag-grid .ag-details-row-fixed-height .ag-cell {
+          display: block !important;
+          padding: 0 !important;
+          height: 100% !important;
+        }
+
+        /* Row Grouping Drop Panel */
+        .passport-ag-grid .ag-column-drop-wrapper {
+          border-bottom: 1px solid var(--ag-border-color);
+          background-color: var(--ag-header-background-color);
+          padding: 8px 16px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 11px;
+        }
+        .passport-ag-grid .ag-column-drop-cell {
+          border-radius: 9999px;
+          background: rgba(96, 205, 255, 0.15);
+          border: 1px solid rgba(96, 205, 255, 0.3);
+          color: #002991;
+          padding: 2px 10px;
+        }
+        .passport-ag-grid.ag-theme-quartz-dark .ag-column-drop-cell {
+          color: #60CDFF;
+          background: rgba(96, 205, 255, 0.12);
+          border-color: rgba(96, 205, 255, 0.25);
         }
 
         /* Light Theme */

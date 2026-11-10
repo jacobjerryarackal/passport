@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { ColDef } from "ag-grid-community";
-import { DataGrid } from "@/components/ui/data-grid";
+import { DataGrid, useGridApiRef } from "@/components/ui/data-grid";
 import {
   Search,
   RefreshCw,
@@ -173,6 +173,7 @@ export default function EvidenceTimelinePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState("ALL");
+  const gridApi = useGridApiRef();
 
   const fetchEvidence = async () => {
     try {
@@ -208,6 +209,10 @@ export default function EvidenceTimelinePage() {
   });
 
   const exportCSV = () => {
+    if (gridApi.current && typeof gridApi.current.exportDataAsCsv === "function") {
+      gridApi.current.exportDataAsCsv({ fileName: "evidence_dossier.csv" });
+      return;
+    }
     const header = [
       "ID",
       "Title",
@@ -436,6 +441,7 @@ export default function EvidenceTimelinePage() {
 
       {/* 3. AG GRID COMPONENT FOR EVIDENCE TIMELINE */}
       <DataGrid<EvidenceItem>
+        apiRef={gridApi}
         rowData={filtered}
         columnDefs={evidenceColumnDefs}
         rowHeight={64}
@@ -444,6 +450,10 @@ export default function EvidenceTimelinePage() {
         domLayout="autoHeight"
         loading={loading}
         emptyMessage="No matching evidence artifacts found."
+        showToolbar={true}
+        showDownloadCsv={true}
+        title="Attestation Evidence Dossier"
+        csvFileName="evidence_dossier.csv"
       />
     </div>
   );

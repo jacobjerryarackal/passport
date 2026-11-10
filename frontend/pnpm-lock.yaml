@@ -17,6 +17,9 @@ importers:
       ag-grid-community:
         specifier: ^32.3.3
         version: 32.3.9
+      ag-grid-enterprise:
+        specifier: 32.3.3
+        version: 32.3.3
       ag-grid-react:
         specifier: ^32.3.3
         version: 32.3.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -260,11 +263,26 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  ag-charts-community@10.3.3:
+    resolution: {integrity: sha512-LUlbVS+4sX1UHqZNuE9m3LISr7D4FEO/Y88fwit1fYPTk2l1ZJG/82gFnm5bQ+iG4QgNIwRa2TWm7w2MLnyJlA==}
+
+  ag-charts-locale@10.3.3:
+    resolution: {integrity: sha512-+ZAQYhkFHbdEwLYP1jZeF44X/8wwSH6SNiTykEIIk6EUuP6mm45X2YfQ0bvyekTkEJlLvFspvRQ+C6mspwLx4w==}
+
+  ag-charts-types@10.3.3:
+    resolution: {integrity: sha512-8rmyquaTkwfP4Lzei/W/cbkq9wwEl8+grIo3z97mtxrMIXh9sHJK1oJipd/u08MmBZrca5Jjtn5F1+UNPu/4fQ==}
+
   ag-charts-types@10.3.9:
     resolution: {integrity: sha512-drcRiJVencliC8LnRwk4MmeQDNNBg5GzmOoLFihO3/k0CUK0VF/N+2nc7iFozwaNG0btSB9vAhYuJLjqHMtRrQ==}
 
+  ag-grid-community@32.3.3:
+    resolution: {integrity: sha512-KhSJ3B6mwRFA4cLjNjOZkDndJBh8o83794ZHl4Q7xP9MJf43oCN9qoZ8pyBanohgpVfLcP0scYYCr9xIlzjdiA==}
+
   ag-grid-community@32.3.9:
     resolution: {integrity: sha512-l07SB0mCbGPkC1R8rQQFgBtI5+1FoXBi3RUk1+dHKV/UPeorMEFAzCokcsOhz0qwcWCPrHauUsbRa1SIxfVEJQ==}
+
+  ag-grid-enterprise@32.3.3:
+    resolution: {integrity: sha512-Seb3ha74qiTUXznL/Xzu948jsEfrYx/ndkds2l0LrQBRUK1gV6O8IkHfTTfvoWZQf+Za6RNgOjiy9GdxO0YDfQ==}
 
   ag-grid-react@32.3.9:
     resolution: {integrity: sha512-moC64CHbTOf+OSG2xCHYJdWh3MtYaVNvi5n7ro+ImS5gSFn7c5a42pjcfTmDh2sPsKD7qmBXXQ5Vr+Zwg9DhNA==}
@@ -916,11 +934,29 @@ snapshots:
 
   acorn@8.19.0: {}
 
+  ag-charts-community@10.3.3:
+    dependencies:
+      ag-charts-locale: 10.3.3
+      ag-charts-types: 10.3.3
+
+  ag-charts-locale@10.3.3: {}
+
+  ag-charts-types@10.3.3: {}
+
   ag-charts-types@10.3.9: {}
+
+  ag-grid-community@32.3.3:
+    dependencies:
+      ag-charts-types: 10.3.3
 
   ag-grid-community@32.3.9:
     dependencies:
       ag-charts-types: 10.3.9
+
+  ag-grid-enterprise@32.3.3:
+    dependencies:
+      ag-charts-community: 10.3.3
+      ag-grid-community: 32.3.3
 
   ag-grid-react@32.3.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
