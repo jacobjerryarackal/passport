@@ -570,9 +570,9 @@ export default function StorePage() {
                       {product.description}
                     </p>
 
-                    <div className="pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[11px] font-mono text-[#6C7378] dark:text-white/60">
-                      <span>Category: {product.category}</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between w-full gap-4 text-[11px] font-mono text-[#6C7378] dark:text-white/60">
+                      <span className="truncate text-left">Category: {product.category}</span>
+                      <span className="shrink-0 text-right px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20 text-[10px]">
                         Attestation Req.
                       </span>
                     </div>

@@ -41,6 +41,7 @@ export interface DataGridProps<T = any> {
   detailCellRenderer?: any;
   detailRowHeight?: number;
   detailCellRendererParams?: any;
+  isRowMaster?: (dataItem: any) => boolean;
   // Row Grouping Drop Panel
   rowGroupPanelShow?: "always" | "onlyWhenGrouping" | "never";
   // Toolbar & CSV Export
@@ -49,6 +50,7 @@ export interface DataGridProps<T = any> {
   csvFileName?: string;
   title?: string;
   onGridReady?: (params: GridReadyEvent<T>) => void;
+  getRowId?: (params: any) => string;
   apiRef?: React.MutableRefObject<any>;
 }
 
@@ -71,12 +73,14 @@ export function DataGrid<T = any>({
   detailCellRenderer,
   detailRowHeight = 280,
   detailCellRendererParams,
+  isRowMaster,
   rowGroupPanelShow,
   showToolbar = false,
   showDownloadCsv = true,
   csvFileName,
   title,
   onGridReady,
+  getRowId,
   apiRef: externalGridApi,
 }: DataGridProps<T>) {
   const { theme, resolvedTheme } = useTheme();
@@ -131,7 +135,11 @@ export function DataGrid<T = any>({
   };
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-[#111114] shadow-xs">
+    <div
+      className={`w-full ${
+        domLayout === "normal" ? "h-full flex flex-col" : ""
+      } rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-[#111114] shadow-xs`}
+    >
       {showToolbar && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
           <div className="flex items-center gap-2">
@@ -160,8 +168,8 @@ export function DataGrid<T = any>({
 
       <div
         className={`passport-ag-grid w-full ${
-          isDark ? "ag-theme-quartz-dark" : "ag-theme-quartz"
-        } ${className}`}
+          domLayout === "normal" ? "flex-1 min-h-0 h-full" : ""
+        } ${isDark ? "ag-theme-quartz-dark" : "ag-theme-quartz"} ${className}`}
       >
         <AgGridReact<T>
           ref={internalGridRef}
@@ -186,7 +194,9 @@ export function DataGrid<T = any>({
           detailCellRenderer={detailCellRenderer}
           detailRowHeight={detailRowHeight}
           detailCellRendererParams={detailCellRendererParams}
+          isRowMaster={isRowMaster || (masterDetail ? () => true : undefined)}
           rowGroupPanelShow={rowGroupPanelShow}
+          getRowId={getRowId}
           {...gridOptions}
         />
       </div>
@@ -269,21 +279,6 @@ export function DataGrid<T = any>({
           opacity: 0 !important;
           pointer-events: none !important;
           visibility: hidden !important;
-        }
-
-        /* Master Detail Row Styling */
-        .passport-ag-grid .ag-details-row,
-        .passport-ag-grid .ag-details-row-fixed-height {
-          display: block !important;
-          height: auto !important;
-          padding: 0 !important;
-          border-bottom: 1px solid var(--ag-border-color) !important;
-        }
-        .passport-ag-grid .ag-details-row .ag-cell,
-        .passport-ag-grid .ag-details-row-fixed-height .ag-cell {
-          display: block !important;
-          padding: 0 !important;
-          height: 100% !important;
         }
 
         /* Row Grouping Drop Panel */

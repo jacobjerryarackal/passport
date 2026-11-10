@@ -5,6 +5,7 @@ import { ColDef, RowClickedEvent } from "ag-grid-community";
 import { DataGrid, useGridApiRef } from "@/components/ui/data-grid";
 import { StatusPill } from "@/components/ui/status-pill";
 import { HashInspector } from "@/components/ui/hash-inspector";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   History,
   ShieldCheck,
@@ -18,8 +19,10 @@ import {
   Copy,
   Check,
   Terminal,
+  X,
 } from "lucide-react";
 import { formatDate, truncateHash } from "@/lib/utils";
+import { AuditDetailCellRenderer } from "@/components/ui/audit-detail-cell-renderer";
 import "ag-grid-enterprise";
 
 interface AuditLog {
@@ -46,201 +49,34 @@ interface VerificationData {
 }
 
 /**
- * Syntax highlighter for pretty-printed JSON payloads in code-editor style.
- */
-function highlightJson(jsonString: string): React.ReactNode[] {
-  const lines = jsonString.split("\n");
-  return lines.map((line, idx) => {
-    const parts = line.split(
-      /("(?:\\.|[^"\\])*"(?:\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?)/g
-    );
-    return (
-      <div key={idx} className="leading-5 font-mono text-[11px] whitespace-pre">
-        {parts.map((part, pIdx) => {
-          if (!part) return null;
-          if (part.endsWith(":") && part.startsWith('"')) {
-            return (
-              <span key={pIdx}>
-                <span className="text-[#60CDFF] dark:text-[#79c0ff] font-semibold">
-                  {part.slice(0, -1)}
-                </span>
-                <span className="text-white/50">:</span>
-              </span>
-            );
-          }
-          if (part.startsWith('"')) {
-            return (
-              <span key={pIdx} className="text-[#34d399] dark:text-[#7ee787]">
-                {part}
-              </span>
-            );
-          }
-          if (part === "true" || part === "false") {
-            return (
-              <span key={pIdx} className="text-[#fb7185] dark:text-[#ff7b72] font-bold">
-                {part}
-              </span>
-            );
-          }
-          if (part === "null") {
-            return (
-              <span key={pIdx} className="text-[#94a3b8] italic">
-                {part}
-              </span>
-            );
-          }
-          if (/^-?\d+(?:\.\d+)?$/.test(part)) {
-            return (
-              <span key={pIdx} className="text-[#fbbf24] dark:text-[#ffa657]">
-                {part}
-              </span>
-            );
-          }
-          return (
-            <span key={pIdx} className="text-white/70">
-              {part}
-            </span>
-          );
-        })}
-      </div>
-    );
-  });
-}
-
-/**
- * Master/Detail Component displaying pretty-printed JSON in premium code editor/terminal style.
- */
-function AuditDetailCellRenderer(params: any) {
-  const log = params.data as AuditLog;
-  const [copied, setCopied] = useState(false);
-
-  if (!log) return null;
-
-  let parsedDetails: any = log.details;
-  if (typeof log.details === "string") {
-    try {
-      parsedDetails = JSON.parse(log.details);
-    } catch {
-      parsedDetails = log.details;
-    }
-  }
-
-  const payload = {
-    eventId: log.id,
-    action: log.action,
-    actor: log.actor,
-    actorModel: log.actorModel || "system-guard",
-    mandateId: log.mandateId || null,
-    timestamp: log.timestamp,
-    merkleIntegrity: {
-      eventHash: log.eventHash,
-      parentHash: log.parentHash || "0x0000000000000000000000000000000000000000",
-      isTampered: log.eventHash?.startsWith("TAMPERED_") || false,
-      isSimulated: Boolean(log.simulated),
-    },
-    payload: parsedDetails,
-  };
-
-  const jsonString = JSON.stringify(payload, null, 2);
-
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(jsonString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="w-full h-full p-4 bg-[#0A0D14] dark:bg-[#070A10] border-t border-b border-black/10 dark:border-white/10 text-[#E6EDF3] font-mono text-xs overflow-hidden flex flex-col">
-      {/* Code Editor Header Bar */}
-      <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
-          </div>
-          <span className="text-[11px] text-white/50 tracking-wider">
-            audit_event_{log.id.slice(0, 8)}.json
-          </span>
-          <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase text-[#60CDFF] bg-[#60CDFF]/10 border border-[#60CDFF]/20">
-            {log.action}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-[0.97]"
-        >
-          {copied ? (
-            <>
-              <Check className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="w-3 h-3 text-white/60" />
-              <span>Copy JSON</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Editor Body with Line Numbers & Syntax Highlighting */}
-      <div className="flex-1 overflow-y-auto max-h-[220px] font-mono text-xs leading-relaxed select-text pr-2">
-        <div className="flex gap-4">
-          <div className="select-none text-right text-white/20 pr-3 border-r border-white/10 font-mono text-[11px] leading-5 shrink-0">
-            {jsonString.split("\n").map((_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
-          </div>
-          <div className="flex-1 overflow-x-auto">
-            {highlightJson(jsonString)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Custom Action Cell Renderer with custom expand chevron and bold uppercase action label.
+ * Action Cell Renderer displaying bold uppercase action label and status indicators.
  */
 function ActionCellRenderer(params: any) {
-  const isExpanded = params.node?.expanded;
   const actionValue = params.value || params.data?.action || "";
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (params.node) {
-      params.node.setExpanded(!params.node.expanded);
-    }
-  };
+  const isTampered = params.data?.eventHash?.startsWith("TAMPERED_");
+  const isSimulated = params.data?.simulated;
 
   return (
-    <div className="flex items-center gap-2 font-mono font-bold uppercase text-xs text-black dark:text-white h-full">
-      <span
-        className="ag-group-expanded-custom inline-flex items-center justify-center w-4 h-4 cursor-pointer text-[#002991] dark:text-[#60CDFF] hover:opacity-80 transition-transform"
-        onClick={handleToggle}
-        title={isExpanded ? "Collapse event payload" : "Expand event payload"}
-      >
-        <svg
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-        </svg>
-      </span>
-      <span>{actionValue}</span>
+    <div className="flex items-center gap-2 font-mono font-bold uppercase text-xs text-black dark:text-white h-full cursor-pointer group">
+      <span className="w-1.5 h-1.5 rounded-full bg-[#002991] dark:bg-[#60CDFF] group-hover:scale-125 transition-transform" />
+      <span className="group-hover:text-[#002991] dark:group-hover:text-[#60CDFF] transition-colors">{actionValue}</span>
+      {isTampered && (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-rose-500 bg-rose-500/10 border border-rose-500/20">
+          MUTATED
+        </span>
+      )}
+      {isSimulated && (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-[#002991]/70 dark:text-[#60CDFF]/70 bg-[#002991]/5 dark:bg-[#60CDFF]/10">
+          SIM
+        </span>
+      )}
     </div>
   );
 }
 
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [verification, setVerification] = useState<VerificationData | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -391,7 +227,7 @@ export default function AuditLogPage() {
             try {
               const parsed = JSON.parse(log.details);
               displayDetails = `LLM Resilience: HTTP ${parsed.statusCode} on ${parsed.from_model} → Switched to ${parsed.to_model} (${parsed.purpose})`;
-            } catch {}
+            } catch { }
           }
           return (
             <div className="flex items-center h-full">
@@ -619,32 +455,82 @@ export default function AuditLogPage() {
             </button>
           </div>
         ) : (
-          <DataGrid<AuditLog>
-            apiRef={gridApi}
-            rowData={filteredLogs}
-            columnDefs={auditColumnDefs}
-            rowHeight={64}
-            pagination={true}
-            paginationPageSize={10}
-            domLayout="autoHeight"
-            loading={loading}
-            emptyMessage="No audit events found."
-            masterDetail={true}
-            detailCellRenderer={AuditDetailCellRenderer}
-            detailRowHeight={280}
-            rowGroupPanelShow="always"
-            showToolbar={true}
-            showDownloadCsv={true}
-            title="Cryptographic Audit Ledger"
-            csvFileName="cryptographic_audit_ledger.csv"
-            onRowClicked={(event) => {
-              if (event.node && !event.node.group) {
-                event.node.setExpanded(!event.node.expanded);
-              }
-            }}
-          />
+          <div style={{ height: "750px", width: "100%" }}>
+            <DataGrid<AuditLog>
+              apiRef={gridApi}
+              rowData={filteredLogs}
+              columnDefs={auditColumnDefs}
+              rowHeight={64}
+              pagination={true}
+              paginationPageSize={10}
+              domLayout="normal"
+              loading={loading}
+              emptyMessage="No audit events found."
+              onRowClicked={(event: RowClickedEvent<AuditLog>) => setSelectedLog(event.data || null)}
+              rowGroupPanelShow="always"
+              showToolbar={true}
+              showDownloadCsv={true}
+              title="Cryptographic Audit Ledger"
+              csvFileName="cryptographic_audit_ledger.csv"
+              getRowId={(params) => params.data.id}
+            />
+          </div>
         )}
       </div>
+
+      {/* Side Drawer for Event Attestation Payload */}
+      <AnimatePresence>
+        {selectedLog && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setSelectedLog(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 cursor-pointer"
+            />
+
+            {/* Slide-out Panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 260 }}
+              className="fixed right-0 top-0 h-full w-[640px] max-w-full z-50 p-6 bg-[#0A0D14] border-l border-white/10 flex flex-col shadow-2xl"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#60CDFF] animate-pulse" />
+                  <div>
+                    <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-white">
+                      Event Attestation Payload
+                    </h3>
+                    <p className="text-[11px] font-mono text-white/50">
+                      ID: {selectedLog.id}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(null)}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                  aria-label="Close drawer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <AuditDetailCellRenderer data={selectedLog} onClose={() => setSelectedLog(null)} />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
