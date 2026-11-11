@@ -5,7 +5,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
+        destination: 'https://passport-backend-re43.onrender.com/api/:path*',
       },
     ];
   },
