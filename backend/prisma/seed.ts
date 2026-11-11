@@ -1,5 +1,7 @@
+/// <reference types="node" />
 import { PrismaClient } from "@prisma/client";
 import * as crypto from "crypto";
+import * as process from "process";
 
 const prisma = new PrismaClient();
 
