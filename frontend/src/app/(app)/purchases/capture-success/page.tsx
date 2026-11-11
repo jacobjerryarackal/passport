@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -43,7 +43,7 @@ interface CaptureResult {
   alreadyCaptured?: boolean;
 }
 
-export default function CaptureSuccessPage() {
+function CaptureSuccessContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || searchParams.get("orderId");
   const payerId = searchParams.get("PayerID");
@@ -289,6 +289,25 @@ export default function CaptureSuccessPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CaptureSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-4xl mx-auto p-12 text-center space-y-4">
+          <div className="inline-flex p-4 rounded-full bg-[#60CDFF]/15 text-[#002991] dark:text-[#60CDFF] animate-spin">
+            <RefreshCw className="w-8 h-8" />
+          </div>
+          <p className="text-sm font-mono text-[#6C7378] dark:text-white/60">
+            Loading...
+          </p>
+        </div>
+      }
+    >
+      <CaptureSuccessContent />
+    </Suspense>
   );
 }
 
